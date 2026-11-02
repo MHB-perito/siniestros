@@ -56,6 +56,8 @@ async function pintarGaleria() {
   urls.splice(0).forEach(URL.revokeObjectURL);
   const fotos = (await DB.fotos(actual.numero)).sort((a, b) => a.fecha - b.fecha);
   $("num-fotos").textContent = fotos.length ? `(${fotos.length})` : "";
+  const sinSubir = fotos.filter(f => !f.subida).length;
+  $("estado-sync").textContent = sinSubir ? `${sinSubir} foto${sinSubir === 1 ? "" : "s"} sin pasar al PC.` : "";
   const g = $("galeria");
   g.innerHTML = "";
   for (const f of fotos) {
@@ -143,6 +145,27 @@ $("input-foto").onchange = async e => {
   await pintarGaleria();
 };
 
+// ---------- Sincronizar con Google Drive ----------
+async function sincronizar() {
+  await guardarNotas();
+  const boton = $("btn-sincronizar");
+  const aviso = t => { $("estado-sync").textContent = t; };
+  boton.disabled = true;
+  try {
+    const r = await Drive.sincronizar(actual, carpeta(actual), aviso);
+    if (r) {
+      await pintarGaleria();
+      aviso(`Hecho ✓ ${r.fotos} foto${r.fotos === 1 ? "" : "s"} nueva${r.fotos === 1 ? "" : "s"} y notas en Drive. ` +
+        "En unos minutos estarán en la carpeta del PC.");
+    }
+  } catch (e) {
+    aviso("No se pudo sincronizar: " + e.message);
+  } finally {
+    boton.disabled = false;
+  }
+}
+$("btn-sincronizar").onclick = sincronizar;
+
 // ---------- Visor ----------
 function verFoto(f, url) {
   fotoAbierta = f;
@@ -211,4 +234,13 @@ navigator.storage?.persist?.();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 window.addEventListener("pagehide", guardarNotas);
 document.addEventListener("visibilitychange", () => { if (document.hidden) guardarNotas(); });
-pintarLista();
+
+(async () => {
+  await pintarLista();
+  // Si volvemos de dar permiso en Google, seguimos con la sincronización que se quedó a medias.
+  const vuelta = Drive.volverDeGoogle();
+  if (!vuelta?.numero || !await DB.siniestro(vuelta.numero)) return;
+  await abrir(vuelta.numero);
+  if (vuelta.error) $("estado-sync").textContent = vuelta.error;
+  else sincronizar();
+})();
