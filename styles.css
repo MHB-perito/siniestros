@@ -106,7 +106,7 @@ button:active, .btn-secundario:active { transform: scale(.98); }
 .lista .fila { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .lista .num { font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
 .lista .dir { color: var(--suave); margin-top: 2px; }
-.lista .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.lista .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
 .chip {
   font-size: 13px; padding: 3px 9px; border-radius: 999px; background: var(--fondo); color: var(--suave);
   font-weight: 600;
@@ -114,6 +114,12 @@ button:active, .btn-secundario:active { transform: scale(.98); }
 .chip.pendiente { background: #fff3dc; color: #8a5a00; }
 @media (prefers-color-scheme: dark) { .chip.pendiente { background: #3a2c10; color: var(--oro); } }
 .chip.ok { background: var(--verde-claro); color: var(--verde); }
+.papelera {
+  margin-left: auto; background: none; padding: 4px; width: 36px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 10px;
+}
+.papelera svg { width: 22px; height: 22px; fill: none; stroke: var(--rojo); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.papelera:active { background: var(--rojo-claro); }
 
 .etiqueta {
   display: inline-block; font-size: 12px; font-weight: 800; padding: 3px 9px; letter-spacing: .04em;

@@ -64,6 +64,12 @@ async function pintarLista() {
     if (Mediciones.hayAlgo(s)) chip("📏 Mediciones");
     if (sinSubir) chip(`${sinSubir} sin pasar al PC`, "pendiente");
     else if (fotos.length) chip("✓ En el PC", "ok");
+    const papelera = document.createElement("button");
+    papelera.className = "papelera";
+    papelera.setAttribute("aria-label", `Borrar el siniestro ${s.numero}`);
+    papelera.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>`;
+    papelera.onclick = e => { e.stopPropagation(); borrarSiniestro(s.numero); };
+    li.querySelector(".meta").appendChild(papelera);
     li.onclick = () => abrir(s.numero);
     ul.appendChild(li);
   }
@@ -261,14 +267,21 @@ $("formulario").onsubmit = async e => {
   await abrir(numero);
 };
 
-$("btn-borrar-siniestro").onclick = async () => {
-  const n = await DB.contarFotos(editando);
-  if (!confirm(`¿Borrar el siniestro ${editando} y sus ${n} fotos de este iPhone?\nNo se puede deshacer.`)) return;
-  await DB.borrarSiniestro(editando);
-  $("dialogo").close();
+// Borra del iPhone el siniestro con sus fotos, notas, mediciones y croquis (lo que ya está en el PC se queda).
+async function borrarSiniestro(numero) {
+  const fotos = await DB.fotos(numero);
+  const sinSubir = fotos.filter(f => !f.subida).length;
+  const aviso = sinSubir ? `\n\n⚠️ ${sinSubir} foto${sinSubir === 1 ? "" : "s"} aún no se ha${sinSubir === 1 ? "" : "n"} pasado al PC y se perderá${sinSubir === 1 ? "" : "n"}.` : "";
+  if (!confirm(`¿Borrar el siniestro ${numero} y sus ${fotos.length} fotos de este iPhone?\nNo se puede deshacer.${aviso}`)) return false;
+  await DB.borrarSiniestro(numero);
   actual = null;
   await pintarLista();
   mostrar("vista-lista");
+  return true;
+}
+
+$("btn-borrar-siniestro").onclick = async () => {
+  if (await borrarSiniestro(editando)) $("dialogo").close();
 };
 
 // ---------- Arranque ----------
