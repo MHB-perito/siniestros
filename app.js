@@ -18,25 +18,52 @@ function mostrar(vista) {
 }
 
 // ---------- Lista ----------
+// Para buscar sin importar mayúsculas ni tildes.
+const normal = t => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+let pintando = 0;   // al teclear rápido, solo vale la última búsqueda
 async function pintarLista() {
+  const yo = ++pintando;
   const todos = (await DB.siniestros()).sort((a, b) => b.actualizado - a.actualizado);
+  const busca = normal($("buscar").value.trim());
+  const vistos = todos.filter(s => normal(`${s.numero} ${s.direccion} ${s.compania}`).includes(busca));
+  const fotosDe = {};
+  for (const s of vistos) fotosDe[s.numero] = await DB.fotos(s.numero);
+  if (yo !== pintando) return;
+  $("resumen").textContent = `${todos.length} siniestro${todos.length === 1 ? "" : "s"} en este iPhone`;
+
   const ul = $("lista");
   ul.innerHTML = "";
-  $("lista-vacia").hidden = todos.length > 0;
-  for (const s of todos) {
-    const n = await DB.contarFotos(s.numero);
+  $("lista-vacia").hidden = vistos.length > 0;
+  $("lista-vacia").textContent = todos.length
+    ? "Ningún siniestro coincide con la búsqueda."
+    : "Aún no hay siniestros. Pulsa «+ Nuevo» para crear uno.";
+
+  for (const s of vistos) {
+    const fotos = fotosDe[s.numero];
+    const sinSubir = fotos.filter(f => !f.subida).length;
     const li = document.createElement("li");
-    li.innerHTML = `<div class="num"></div><div class="dir"></div>
-      <div class="meta"><span class="etiqueta ${s.compania}"></span><span></span></div>`;
+    li.className = s.compania;
+    li.innerHTML = `<div class="fila"><span class="num"></span><span class="etiqueta ${s.compania}"></span></div>
+      <div class="dir"></div><div class="meta"></div>`;
     li.querySelector(".num").textContent = s.numero;
-    li.querySelector(".dir").textContent = s.direccion;
     li.querySelector(".etiqueta").textContent = s.compania;
-    li.querySelector(".meta span:last-child").textContent =
-      `${n} foto${n === 1 ? "" : "s"}${s.notas ? " · con notas" : ""}`;
+    li.querySelector(".dir").textContent = s.direccion;
+    const chip = (texto, clase = "") => {
+      const c = document.createElement("span");
+      c.className = `chip ${clase}`;
+      c.textContent = texto;
+      li.querySelector(".meta").appendChild(c);
+    };
+    chip(`📷 ${fotos.length}`);
+    if (s.notas) chip("📝 Notas");
+    if (sinSubir) chip(`${sinSubir} sin pasar al PC`, "pendiente");
+    else if (fotos.length) chip("✓ En el PC", "ok");
     li.onclick = () => abrir(s.numero);
     ul.appendChild(li);
   }
 }
+$("buscar").addEventListener("input", pintarLista);
 
 // ---------- Detalle ----------
 async function abrir(numero) {

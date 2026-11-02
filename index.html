@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Siniestros</title>
+<title>Peritaciones</title>
 <meta name="theme-color" content="#0b3a6e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Siniestros">
+<meta name="apple-mobile-web-app-title" content="PERITACIONES">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
@@ -18,31 +18,40 @@
 
 <!-- Lista de siniestros -->
 <section id="vista-lista" class="vista">
-  <header class="barra">
-    <h1>Siniestros</h1>
-    <button id="btn-nuevo" class="btn-primario">+ Nuevo</button>
+  <header class="portada">
+    <div class="portada-fila">
+      <div>
+        <h1>PERITACIONES</h1>
+        <p id="resumen" class="resumen"></p>
+      </div>
+      <button id="btn-nuevo" class="btn-nuevo">+ Nuevo</button>
+    </div>
+    <div class="buscador">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="buscar" type="search" placeholder="Buscar nº, dirección o compañía" autocomplete="off" enterkeyhint="search">
+    </div>
   </header>
   <ul id="lista" class="lista"></ul>
-  <p id="lista-vacia" class="vacio" hidden>Aún no hay siniestros.<br>Pulsa «+ Nuevo» para crear uno.</p>
+  <p id="lista-vacia" class="vacio" hidden></p>
 </section>
 
 <!-- Detalle de un siniestro -->
 <section id="vista-detalle" class="vista" hidden>
   <header class="barra">
-    <button id="btn-volver" class="btn-texto">‹ Lista</button>
+    <button id="btn-volver" class="btn-texto">‹ Peritaciones</button>
     <button id="btn-editar" class="btn-texto">Editar</button>
   </header>
-  <div class="cabecera-siniestro">
+  <div class="ficha">
     <span id="det-compania" class="etiqueta"></span>
     <h2 id="det-numero"></h2>
-    <p id="det-direccion"></p>
+    <p id="det-direccion" class="ficha-dir"></p>
     <p id="det-carpeta" class="carpeta"></p>
   </div>
 
   <div class="acciones">
     <button id="btn-camara" class="btn-primario grande">📷 Cámara</button>
     <label class="btn-secundario grande">
-      🖼️ Cámara iPhone
+      📸 Cámara iPhone
       <input id="input-foto" type="file" accept="image/*" capture="environment" hidden>
     </label>
   </div>
@@ -54,7 +63,7 @@
   <textarea id="notas" rows="10" placeholder="Escribe o dicta aquí lo de la visita…"></textarea>
   <p id="estado-notas" class="estado"></p>
 
-  <button id="btn-sincronizar" class="btn-secundario grande ancho">☁️ Sincronizar con el PC</button>
+  <button id="btn-sincronizar" class="btn-sync grande ancho">☁️ Sincronizar con el PC</button>
   <p id="estado-sync" class="estado"></p>
 </section>
 
