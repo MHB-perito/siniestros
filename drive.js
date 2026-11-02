@@ -142,9 +142,10 @@ const Drive = (() => {
       `${dos(d.getHours())}${dos(d.getMinutes())}${dos(d.getSeconds())}_${f.id}.${ext}`;
   }
 
-  // Sube lo pendiente del siniestro `s`. aviso(texto) va contando el progreso.
+  // Sube las fotos pendientes del siniestro `s` y los `textos` ({ "notas.txt": "…" }), que se
+  // sobrescriben. aviso(texto) va contando el progreso.
   // Si no hay permiso, se va a Google y la sincronización sigue al volver.
-  async function sincronizar(s, nombreCarpeta, aviso) {
+  async function sincronizar(s, nombreCarpeta, textos, aviso) {
     if (!navigator.onLine) throw new Error("No hay conexión a internet.");
     if (!token()) return pedirPermiso(s.numero);
     try {
@@ -163,11 +164,13 @@ const Drive = (() => {
         }
       }
 
-      aviso("Subiendo notas…");
-      const notas = await buscar(`name = 'notas.txt' and '${carpeta}' in parents`, "id");
-      const texto = new Blob([s.notas || ""], { type: "text/plain;charset=utf-8" });
-      if (notas[0]) await subir({}, texto, "text/plain; charset=UTF-8", notas[0].id);
-      else await subir({ name: "notas.txt", parents: [carpeta] }, texto, "text/plain; charset=UTF-8");
+      for (const [nombre, contenido] of Object.entries(textos)) {
+        aviso(`Subiendo ${nombre}…`);
+        const hay = await buscar(`name = '${nombre}' and '${carpeta}' in parents`, "id");
+        const texto = new Blob([contenido], { type: "text/plain;charset=utf-8" });
+        if (hay[0]) await subir({}, texto, "text/plain; charset=UTF-8", hay[0].id);
+        else await subir({ name: nombre, parents: [carpeta] }, texto, "text/plain; charset=UTF-8");
+      }
 
       return { fotos: pendientes.length };
     } catch (e) {

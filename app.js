@@ -1,5 +1,3 @@
-const $ = id => document.getElementById(id);
-
 let actual = null;          // siniestro abierto
 let editando = null;        // nº del siniestro que se edita en el diálogo (null = nuevo)
 let stream = null;          // cámara
@@ -12,8 +10,13 @@ function limpiar(texto) {
 }
 const carpeta = s => `${limpiar(s.numero)}_${limpiar(s.direccion)}`;
 
+// Fechas: se guardan como "2026-11-02" (lo que da <input type="date">) y se enseñan como 02/11/2026.
+const dos = n => String(n).padStart(2, "0");
+const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`; };
+const fechaBonita = f => f ? f.split("-").reverse().join("/") : "";
+
 function mostrar(vista) {
-  for (const v of ["vista-lista", "vista-detalle", "vista-camara", "vista-foto"]) $(v).hidden = v !== vista;
+  for (const v of ["vista-lista", "vista-detalle", "vista-camara", "vista-foto", "vista-croquis"]) $(v).hidden = v !== vista;
   window.scrollTo(0, 0);
 }
 
@@ -55,8 +58,10 @@ async function pintarLista() {
       c.textContent = texto;
       li.querySelector(".meta").appendChild(c);
     };
+    if (s.fechaVisita) chip(`📅 ${fechaBonita(s.fechaVisita)}`);
     chip(`📷 ${fotos.length}`);
     if (s.notas) chip("📝 Notas");
+    if (Mediciones.texto(s)) chip("📏 Mediciones");
     if (sinSubir) chip(`${sinSubir} sin pasar al PC`, "pendiente");
     else if (fotos.length) chip("✓ En el PC", "ok");
     li.onclick = () => abrir(s.numero);
@@ -73,16 +78,31 @@ async function abrir(numero) {
   $("det-compania").textContent = actual.compania;
   $("det-compania").className = `etiqueta ${actual.compania}`;
   $("det-carpeta").textContent = `Carpeta: Siniestros/${carpeta(actual)}`;
+  $("det-fecha").value = actual.fechaVisita || "";
   $("notas").value = actual.notas || "";
   $("estado-notas").textContent = "";
   await pintarGaleria();
+  Mediciones.pintar();
+  await Croquis.pintar();
+  elegirPestana("fotos");
   mostrar("vista-detalle");
 }
+
+function elegirPestana(nombre) {
+  document.querySelectorAll(".pestanas button").forEach(b => b.classList.toggle("activa", b.dataset.pestana === nombre));
+  document.querySelectorAll(".pestana").forEach(p => { p.hidden = p.id !== "pestana-" + nombre; });
+}
+document.querySelectorAll(".pestanas button").forEach(b => b.onclick = () => elegirPestana(b.dataset.pestana));
+
+$("det-fecha").onchange = async () => {
+  actual.fechaVisita = $("det-fecha").value;
+  await tocar();
+};
 
 async function pintarGaleria() {
   urls.splice(0).forEach(URL.revokeObjectURL);
   const fotos = (await DB.fotos(actual.numero)).sort((a, b) => a.fecha - b.fecha);
-  $("num-fotos").textContent = fotos.length ? `(${fotos.length})` : "";
+  $("num-fotos").textContent = fotos.length ? `${fotos.length} foto${fotos.length === 1 ? "" : "s"}` : "";
   const sinSubir = fotos.filter(f => !f.subida).length;
   $("estado-sync").textContent = sinSubir ? `${sinSubir} foto${sinSubir === 1 ? "" : "s"} sin pasar al PC.` : "";
   const g = $("galeria");
@@ -114,6 +134,8 @@ async function guardarNotas() {
   clearTimeout(temporizador);
   if (!actual || actual.notas === $("notas").value) return;
   actual.notas = $("notas").value;
+  // Si no se ha puesto otra, la fecha de visita es el día en que se empiezan las notas.
+  if (!actual.fechaVisita && actual.notas.trim()) $("det-fecha").value = actual.fechaVisita = hoy();
   await tocar();
   $("estado-notas").textContent = "Guardado en el iPhone ✓";
 }
@@ -179,11 +201,15 @@ async function sincronizar() {
   const aviso = t => { $("estado-sync").textContent = t; };
   boton.disabled = true;
   try {
-    const r = await Drive.sincronizar(actual, carpeta(actual), aviso);
+    const notas = (actual.fechaVisita ? `Fecha de visita: ${fechaBonita(actual.fechaVisita)}\n\n` : "") + (actual.notas || "");
+    const textos = { "notas.txt": notas };
+    const mediciones = Mediciones.texto(actual);
+    if (mediciones) textos["mediciones.txt"] = `Mediciones para reparar — siniestro ${actual.numero}\n\n${mediciones}\n`;
+    const r = await Drive.sincronizar(actual, carpeta(actual), textos, aviso);
     if (r) {
       await pintarGaleria();
-      aviso(`Hecho ✓ ${r.fotos} foto${r.fotos === 1 ? "" : "s"} nueva${r.fotos === 1 ? "" : "s"} y notas en Drive. ` +
-        "En unos minutos estarán en la carpeta del PC.");
+      aviso(`Hecho ✓ ${r.fotos} foto${r.fotos === 1 ? "" : "s"} nueva${r.fotos === 1 ? "" : "s"}, ` +
+        `notas${mediciones ? " y mediciones" : ""} en Drive. En unos minutos estarán en la carpeta del PC.`);
     }
   } catch (e) {
     aviso("No se pudo sincronizar: " + e.message);

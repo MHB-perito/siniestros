@@ -45,23 +45,51 @@
     <span id="det-compania" class="etiqueta"></span>
     <h2 id="det-numero"></h2>
     <p id="det-direccion" class="ficha-dir"></p>
+    <label class="fecha-visita">📅 Fecha de visita
+      <input id="det-fecha" type="date">
+    </label>
     <p id="det-carpeta" class="carpeta"></p>
   </div>
 
-  <div class="acciones">
-    <button id="btn-camara" class="btn-primario grande">📷 Cámara</button>
-    <label class="btn-secundario grande">
-      📸 Cámara iPhone
-      <input id="input-foto" type="file" accept="image/*" capture="environment" hidden>
-    </label>
+  <nav class="pestanas" role="tablist">
+    <button data-pestana="fotos" class="activa">Fotos</button>
+    <button data-pestana="notas">Notas</button>
+    <button data-pestana="mediciones">Mediciones</button>
+    <button data-pestana="croquis">Croquis</button>
+  </nav>
+
+  <div id="pestana-fotos" class="pestana">
+    <div class="acciones">
+      <button id="btn-camara" class="btn-primario grande">📷 Cámara</button>
+      <label class="btn-secundario grande">
+        📸 Cámara iPhone
+        <input id="input-foto" type="file" accept="image/*" capture="environment" hidden>
+      </label>
+    </div>
+    <p class="subtitulo"><span id="num-fotos"></span></p>
+    <div id="galeria" class="galeria"></div>
   </div>
 
-  <h3>Fotos <span id="num-fotos" class="contador"></span></h3>
-  <div id="galeria" class="galeria"></div>
+  <div id="pestana-notas" class="pestana" hidden>
+    <textarea id="notas" rows="12" placeholder="Escribe o dicta aquí lo de la visita…"></textarea>
+    <p id="estado-notas" class="estado"></p>
+  </div>
 
-  <h3>Notas</h3>
-  <textarea id="notas" rows="10" placeholder="Escribe o dicta aquí lo de la visita…"></textarea>
-  <p id="estado-notas" class="estado"></p>
+  <div id="pestana-mediciones" class="pestana" hidden>
+    <form id="form-estancia" class="nueva-estancia">
+      <input id="nueva-estancia" list="estancias" placeholder="Estancia: salón, cocina, baño…" autocomplete="off" enterkeyhint="done">
+      <datalist id="estancias"></datalist>
+      <button class="btn-primario">Añadir</button>
+    </form>
+    <div id="mediciones"></div>
+    <p id="mediciones-vacio" class="vacio-peq">Añade una estancia para apuntar lo que hay que reparar.</p>
+  </div>
+
+  <div id="pestana-croquis" class="pestana" hidden>
+    <button id="btn-nuevo-croquis" class="btn-secundario grande bloque">✏️ Nuevo croquis</button>
+    <p class="subtitulo">Solo para ti: los croquis no se pasan al PC.</p>
+    <div id="lista-croquis" class="galeria croquis"></div>
+  </div>
 
   <button id="btn-sincronizar" class="btn-sync grande ancho">☁️ Sincronizar con el PC</button>
   <p id="estado-sync" class="estado"></p>
@@ -75,6 +103,28 @@
     <button id="btn-cerrar-camara" class="btn-camara">Listo</button>
     <button id="btn-disparar" class="disparador" aria-label="Hacer foto"></button>
     <span id="camara-contador" class="btn-camara contador-camara">0</span>
+  </div>
+</section>
+
+<!-- Pizarra para croquis -->
+<section id="vista-croquis" class="pizarra" hidden>
+  <div class="pizarra-barra">
+    <button id="cq-cerrar" class="btn-texto">Cancelar</button>
+    <button id="cq-deshacer" class="btn-texto">↶ Deshacer</button>
+    <button id="cq-limpiar" class="btn-texto">Limpiar</button>
+    <button id="cq-guardar" class="btn-primario">Guardar</button>
+  </div>
+  <canvas id="lienzo"></canvas>
+  <div class="pizarra-herramientas">
+    <button class="color activo" data-color="#16202c" style="background:#16202c" aria-label="Negro"></button>
+    <button class="color" data-color="#d32f2f" style="background:#d32f2f" aria-label="Rojo"></button>
+    <button class="color" data-color="#1565c0" style="background:#1565c0" aria-label="Azul"></button>
+    <button class="color" data-color="#2e7d32" style="background:#2e7d32" aria-label="Verde"></button>
+    <button class="grosor" data-grosor="3">Fino</button>
+    <button class="grosor activo" data-grosor="6">Medio</button>
+    <button class="grosor" data-grosor="12">Grueso</button>
+    <button id="cq-goma" class="grosor">Goma</button>
+    <button id="cq-borrar" class="btn-peligro">Borrar</button>
   </div>
 </section>
 
@@ -114,6 +164,8 @@
 
 <script src="db.js"></script>
 <script src="drive.js"></script>
+<script src="mediciones.js"></script>
+<script src="croquis.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
