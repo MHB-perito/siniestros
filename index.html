@@ -61,9 +61,18 @@
   </div>
   <div id="galeria" class="galeria con-margen"></div>
 
+  <h3>📋 Tipo de siniestro <span id="checklist-cuenta" class="contador"></span></h3>
+  <select id="tipo-siniestro" class="selector"></select>
+  <div id="checklist" class="checklist"></div>
+
   <h3>📝 Notas</h3>
   <textarea id="notas" rows="10" placeholder="Escribe o dicta aquí lo de la visita…"></textarea>
   <p id="estado-notas" class="estado"></p>
+
+  <h3>👥 Terceros implicados</h3>
+  <p class="subtitulo">Causante, administrador de la comunidad…</p>
+  <div id="terceros"></div>
+  <button id="btn-tercero" class="btn-secundario grande bloque">+ Añadir contacto</button>
 
   <h3>📏 Mediciones</h3>
   <p class="subtitulo">Solo para ti: no se pasan al PC ni se usan en el informe.</p>
@@ -151,6 +160,7 @@
 
 <script src="db.js"></script>
 <script src="drive.js"></script>
+<script src="guion.js"></script>
 <script src="mediciones.js"></script>
 <script src="croquis.js"></script>
 <script src="app.js"></script>

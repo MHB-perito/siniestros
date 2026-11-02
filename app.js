@@ -59,6 +59,7 @@ async function pintarLista() {
       li.querySelector(".meta").appendChild(c);
     };
     if (s.fechaVisita) chip(`📅 ${fechaBonita(s.fechaVisita)}`);
+    if (Guion.nombreTipo(s)) chip(Guion.nombreTipo(s));
     chip(`📷 ${fotos.length}`);
     if (s.notas) chip("📝 Notas");
     if (Mediciones.hayAlgo(s)) chip("📏 Mediciones");
@@ -88,6 +89,7 @@ async function abrir(numero) {
   $("notas").value = actual.notas || "";
   $("estado-notas").textContent = "";
   await pintarGaleria();
+  Guion.pintar();
   Mediciones.pintar();
   await Croquis.pintar();
   mostrar("vista-detalle");
@@ -200,7 +202,11 @@ async function sincronizar() {
   const aviso = t => { $("estado-sync").textContent = t; };
   boton.disabled = true;
   try {
-    const notas = (actual.fechaVisita ? `Fecha de visita: ${fechaBonita(actual.fechaVisita)}\n\n` : "") + (actual.notas || "");
+    const notas = [
+      actual.fechaVisita ? `Fecha de visita: ${fechaBonita(actual.fechaVisita)}` : "",
+      Guion.texto(actual),
+      actual.notas?.trim() ? `Notas:\n${actual.notas.trim()}` : "",
+    ].filter(Boolean).join("\n\n") + "\n";
     const r = await Drive.sincronizar(actual, carpeta(actual), { "notas.txt": notas }, aviso);
     if (r) {
       await pintarGaleria();

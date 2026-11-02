@@ -1,8 +1,8 @@
 // Guarda la app en el iPhone para que abra sin conexión.
 // Al cambiar cualquier archivo de la app, sube la versión para que el iPhone la actualice.
-const VERSION = "v8";
+const VERSION = "v9";
 const ARCHIVOS = [
-  "./", "index.html", "styles.css", "db.js", "drive.js", "mediciones.js", "croquis.js", "app.js", "manifest.json",
+  "./", "index.html", "styles.css", "db.js", "drive.js", "guion.js", "mediciones.js", "croquis.js", "app.js", "manifest.json",
   "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png",
 ];
 

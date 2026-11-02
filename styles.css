@@ -164,6 +164,31 @@ textarea:focus { border-color: var(--azul-vivo); }
 .subtitulo + .nueva-estancia, .subtitulo + .bloque { margin-top: 0; }
 h3 + .subtitulo { margin-top: -4px; }
 
+/* Tipo de siniestro, checklist y terceros */
+.selector, .tercero select, .tercero input, .punto input:not([type]) {
+  width: 100%; font: inherit; padding: 11px 12px; border-radius: 12px;
+  border: 1px solid var(--borde); background: var(--tarjeta); color: var(--texto);
+}
+.checklist { margin-top: 8px; display: grid; gap: 6px; }
+.checklist:empty { display: none; }
+.punto { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 14px; padding: 10px 12px; }
+.punto label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+.punto input[type=checkbox] { width: 24px; height: 24px; margin: 0; flex: none; accent-color: var(--verde); }
+.punto label span { padding-top: 1px; }
+.punto input:not([type]) { margin-top: 8px; background: var(--fondo); padding: 9px 12px; }
+.tercero {
+  background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 16px; box-shadow: var(--sombra);
+  padding: 12px; margin-bottom: 10px; display: grid; gap: 8px;
+}
+.tercero input { background: var(--fondo); }
+.tercero-cab { display: flex; gap: 8px; align-items: center; }
+.tercero-cab select { flex: 1; font-weight: 700; }
+.tercero-cab .btn-peligro { padding-right: 0; font-size: 14px; }
+.btn-llamar {
+  display: block; text-align: center; padding: 11px; border-radius: 12px; font-weight: 700;
+  background: var(--verde-claro); color: var(--verde); text-decoration: none;
+}
+
 /* Mediciones */
 .nueva-estancia { display: flex; gap: 8px; }
 .nueva-estancia input {
