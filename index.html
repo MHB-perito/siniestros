@@ -51,45 +51,32 @@
     <p id="det-carpeta" class="carpeta"></p>
   </div>
 
-  <nav class="pestanas" role="tablist">
-    <button data-pestana="fotos" class="activa">Fotos</button>
-    <button data-pestana="notas">Notas</button>
-    <button data-pestana="mediciones">Mediciones</button>
-    <button data-pestana="croquis">Croquis</button>
-  </nav>
-
-  <div id="pestana-fotos" class="pestana">
-    <div class="acciones">
-      <button id="btn-camara" class="btn-primario grande">📷 Cámara</button>
-      <label class="btn-secundario grande">
-        📸 Cámara iPhone
-        <input id="input-foto" type="file" accept="image/*" capture="environment" hidden>
-      </label>
-    </div>
-    <p class="subtitulo"><span id="num-fotos"></span></p>
-    <div id="galeria" class="galeria"></div>
+  <h3>📷 Fotos <span id="num-fotos" class="contador"></span></h3>
+  <div class="acciones">
+    <button id="btn-camara" class="btn-primario grande">📷 Cámara</button>
+    <label class="btn-secundario grande">
+      📸 Cámara iPhone
+      <input id="input-foto" type="file" accept="image/*" capture="environment" hidden>
+    </label>
   </div>
+  <div id="galeria" class="galeria con-margen"></div>
 
-  <div id="pestana-notas" class="pestana" hidden>
-    <textarea id="notas" rows="12" placeholder="Escribe o dicta aquí lo de la visita…"></textarea>
-    <p id="estado-notas" class="estado"></p>
-  </div>
+  <h3>📝 Notas</h3>
+  <textarea id="notas" rows="10" placeholder="Escribe o dicta aquí lo de la visita…"></textarea>
+  <p id="estado-notas" class="estado"></p>
 
-  <div id="pestana-mediciones" class="pestana" hidden>
-    <form id="form-estancia" class="nueva-estancia">
-      <input id="nueva-estancia" list="estancias" placeholder="Estancia: salón, cocina, baño…" autocomplete="off" enterkeyhint="done">
-      <datalist id="estancias"></datalist>
-      <button class="btn-primario">Añadir</button>
-    </form>
-    <div id="mediciones"></div>
-    <p id="mediciones-vacio" class="vacio-peq">Añade una estancia para apuntar lo que hay que reparar.</p>
-  </div>
+  <h3>📏 Mediciones</h3>
+  <p class="subtitulo">Solo para ti: no se pasan al PC ni se usan en el informe.</p>
+  <form id="form-estancia" class="nueva-estancia">
+    <input id="nueva-estancia" placeholder="Escribe la estancia (salón, cocina…)" autocomplete="off" enterkeyhint="done">
+    <button class="btn-primario">Añadir</button>
+  </form>
+  <div id="mediciones"></div>
 
-  <div id="pestana-croquis" class="pestana" hidden>
-    <button id="btn-nuevo-croquis" class="btn-secundario grande bloque">✏️ Nuevo croquis</button>
-    <p class="subtitulo">Solo para ti: los croquis no se pasan al PC.</p>
-    <div id="lista-croquis" class="galeria croquis"></div>
-  </div>
+  <h3>✏️ Croquis</h3>
+  <p class="subtitulo">Solo para ti: los croquis no se pasan al PC.</p>
+  <button id="btn-nuevo-croquis" class="btn-secundario grande bloque">✏️ Abrir pizarra para pintar</button>
+  <div id="lista-croquis" class="galeria croquis"></div>
 
   <button id="btn-sincronizar" class="btn-sync grande ancho">☁️ Sincronizar con el PC</button>
   <p id="estado-sync" class="estado"></p>

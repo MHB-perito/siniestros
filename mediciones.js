@@ -1,8 +1,6 @@
 // Mediciones para reparar: estancias con sus elementos (techo 10 m², paredes 25 m²…).
-// Se guardan en actual.mediciones y se pasan al PC como mediciones.txt.
+// Se guardan en actual.mediciones. Solo para Miguel: no se sincronizan ni se usan en el informe.
 const Mediciones = (() => {
-  const ESTANCIAS = ["Salón", "Comedor", "Cocina", "Baño", "Aseo", "Dormitorio", "Dormitorio principal",
-    "Pasillo", "Recibidor", "Terraza", "Lavadero", "Garaje", "Trastero", "Fachada", "Cubierta", "Zonas comunes"];
   const UNIDADES = ["m²", "ml", "ud"];
   const ELEMENTOS = {   // elemento → unidad por defecto
     "Techo": "m²", "Paredes": "m²", "Suelo": "m²", "Alicatado": "m²", "Falso techo": "m²",
@@ -10,8 +8,6 @@ const Mediciones = (() => {
     "Puerta": "ud", "Ventana": "ud", "Armario": "ud",
   };
   const POR_DEFECTO = ["Techo", "Paredes", "Suelo"];
-
-  $("estancias").innerHTML = ESTANCIAS.map(e => `<option value="${e}">`).join("");
 
   const lista = () => (actual.mediciones ||= []);
 
@@ -24,7 +20,6 @@ const Mediciones = (() => {
   function pintar() {
     const cont = $("mediciones");
     cont.innerHTML = "";
-    $("mediciones-vacio").hidden = lista().length > 0;
     lista().forEach((est, i) => {
       const filas = est.elementos.map((m, j) => {
         const cantidad = el("input", { value: m.cantidad || "", inputMode: "decimal", placeholder: "0" });
@@ -81,16 +76,7 @@ const Mediciones = (() => {
     pintar();
   };
 
-  // Texto para mediciones.txt (solo lo que tiene cantidad).
-  function texto(s) {
-    return (s.mediciones || [])
-      .map(est => {
-        const filas = est.elementos.filter(m => m.cantidad).map(m => `  - ${m.nombre}: ${m.cantidad} ${m.unidad}`);
-        return filas.length ? `${est.estancia}\n${filas.join("\n")}` : "";
-      })
-      .filter(Boolean)
-      .join("\n\n");
-  }
+  const hayAlgo = s => (s.mediciones || []).length > 0;
 
-  return { pintar, texto };
+  return { pintar, hayAlgo };
 })();

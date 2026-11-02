@@ -61,7 +61,7 @@ async function pintarLista() {
     if (s.fechaVisita) chip(`📅 ${fechaBonita(s.fechaVisita)}`);
     chip(`📷 ${fotos.length}`);
     if (s.notas) chip("📝 Notas");
-    if (Mediciones.texto(s)) chip("📏 Mediciones");
+    if (Mediciones.hayAlgo(s)) chip("📏 Mediciones");
     if (sinSubir) chip(`${sinSubir} sin pasar al PC`, "pendiente");
     else if (fotos.length) chip("✓ En el PC", "ok");
     li.onclick = () => abrir(s.numero);
@@ -84,15 +84,8 @@ async function abrir(numero) {
   await pintarGaleria();
   Mediciones.pintar();
   await Croquis.pintar();
-  elegirPestana("fotos");
   mostrar("vista-detalle");
 }
-
-function elegirPestana(nombre) {
-  document.querySelectorAll(".pestanas button").forEach(b => b.classList.toggle("activa", b.dataset.pestana === nombre));
-  document.querySelectorAll(".pestana").forEach(p => { p.hidden = p.id !== "pestana-" + nombre; });
-}
-document.querySelectorAll(".pestanas button").forEach(b => b.onclick = () => elegirPestana(b.dataset.pestana));
 
 $("det-fecha").onchange = async () => {
   actual.fechaVisita = $("det-fecha").value;
@@ -102,7 +95,7 @@ $("det-fecha").onchange = async () => {
 async function pintarGaleria() {
   urls.splice(0).forEach(URL.revokeObjectURL);
   const fotos = (await DB.fotos(actual.numero)).sort((a, b) => a.fecha - b.fecha);
-  $("num-fotos").textContent = fotos.length ? `${fotos.length} foto${fotos.length === 1 ? "" : "s"}` : "";
+  $("num-fotos").textContent = fotos.length ? `(${fotos.length})` : "";
   const sinSubir = fotos.filter(f => !f.subida).length;
   $("estado-sync").textContent = sinSubir ? `${sinSubir} foto${sinSubir === 1 ? "" : "s"} sin pasar al PC.` : "";
   const g = $("galeria");
@@ -202,14 +195,11 @@ async function sincronizar() {
   boton.disabled = true;
   try {
     const notas = (actual.fechaVisita ? `Fecha de visita: ${fechaBonita(actual.fechaVisita)}\n\n` : "") + (actual.notas || "");
-    const textos = { "notas.txt": notas };
-    const mediciones = Mediciones.texto(actual);
-    if (mediciones) textos["mediciones.txt"] = `Mediciones para reparar — siniestro ${actual.numero}\n\n${mediciones}\n`;
-    const r = await Drive.sincronizar(actual, carpeta(actual), textos, aviso);
+    const r = await Drive.sincronizar(actual, carpeta(actual), { "notas.txt": notas }, aviso);
     if (r) {
       await pintarGaleria();
-      aviso(`Hecho ✓ ${r.fotos} foto${r.fotos === 1 ? "" : "s"} nueva${r.fotos === 1 ? "" : "s"}, ` +
-        `notas${mediciones ? " y mediciones" : ""} en Drive. En unos minutos estarán en la carpeta del PC.`);
+      aviso(`Hecho ✓ ${r.fotos} foto${r.fotos === 1 ? "" : "s"} nueva${r.fotos === 1 ? "" : "s"} y notas en Drive. ` +
+        "En unos minutos estarán en la carpeta del PC.");
     }
   } catch (e) {
     aviso("No se pudo sincronizar: " + e.message);

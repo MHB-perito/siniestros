@@ -93,7 +93,7 @@ const Croquis = (() => {
   async function cerrar() {
     await pintar();
     mostrar("vista-detalle");
-    elegirPestana("croquis");
+    $("btn-nuevo-croquis").scrollIntoView({ block: "center" });
   }
 
   $("cq-cerrar").onclick = () => {

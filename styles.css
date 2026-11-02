@@ -129,7 +129,7 @@ button:active, .btn-secundario:active { transform: scale(.98); }
 }
 .ficha-dir { margin: 0; font-size: 17px; }
 .carpeta { color: var(--suave); font-size: 12px; word-break: break-all; margin: 8px 0 0; }
-.acciones { display: flex; gap: 10px; margin-top: 16px; }
+.acciones { display: flex; gap: 10px; }
 .contador { color: var(--suave); font-weight: 400; }
 
 .galeria { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; border-radius: 14px; overflow: hidden; }
@@ -154,17 +154,9 @@ textarea:focus { border-color: var(--azul-vivo); }
 .bloque { width: 100%; }
 .vacio-peq { color: var(--suave); text-align: center; margin: 24px 0; }
 
-/* Pestañas */
-.pestanas {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 16px 0 14px;
-  background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 14px; padding: 4px;
-  position: sticky; top: calc(env(safe-area-inset-top) + 52px); z-index: 1; box-shadow: var(--sombra);
-}
-.pestanas button {
-  background: none; color: var(--suave); font-size: 14px; font-weight: 600; padding: 9px 2px; border-radius: 10px;
-}
-.pestanas button.activa { background: var(--azul-vivo); color: #fff; }
-@media (prefers-color-scheme: dark) { .pestanas button.activa { color: #0e1217; } }
+.galeria.con-margen { margin-top: 10px; }
+.subtitulo + .nueva-estancia, .subtitulo + .bloque { margin-top: 0; }
+h3 + .subtitulo { margin-top: -4px; }
 
 /* Mediciones */
 .nueva-estancia { display: flex; gap: 8px; }
