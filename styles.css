@@ -1,0 +1,119 @@
+:root {
+  --azul: #0b3a6e;
+  --azul-claro: #e6eef7;
+  --fondo: #f4f5f7;
+  --tarjeta: #ffffff;
+  --texto: #1b1f24;
+  --suave: #6b7280;
+  --rojo: #c0392b;
+  --borde: #d9dde3;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --azul: #5b9be0;
+    --azul-claro: #1d2a3a;
+    --fondo: #111418;
+    --tarjeta: #1c2026;
+    --texto: #eef0f3;
+    --suave: #9aa3ad;
+    --borde: #2e343c;
+  }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--fondo); color: var(--texto); }
+body {
+  font: 17px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 24px);
+}
+[hidden] { display: none !important; }
+
+.barra {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; position: sticky; top: 0; background: var(--fondo); z-index: 2;
+}
+h1 { font-size: 28px; margin: 0; }
+h2 { margin: 4px 0; font-size: 22px; }
+h3 { margin: 24px 0 8px; font-size: 18px; }
+
+button, .btn-primario, .btn-secundario {
+  font: inherit; border: 0; border-radius: 12px; cursor: pointer;
+}
+.btn-primario { background: var(--azul); color: #fff; padding: 10px 16px; font-weight: 600; }
+.btn-secundario { background: var(--azul-claro); color: var(--azul); padding: 10px 16px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+.btn-texto { background: none; color: var(--azul); padding: 8px 0; font-weight: 600; }
+.btn-peligro { background: none; color: var(--rojo); padding: 10px 12px; font-weight: 600; }
+.grande { padding: 16px; font-size: 18px; flex: 1; text-align: center; }
+.ancho { width: 100%; margin-top: 24px; }
+button:disabled { opacity: .5; }
+
+.lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.lista li {
+  background: var(--tarjeta); border-radius: 14px; padding: 14px 16px;
+  border: 1px solid var(--borde); cursor: pointer;
+}
+.lista .num { font-weight: 700; font-size: 18px; }
+.lista .dir { color: var(--suave); margin-top: 2px; }
+.lista .meta { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 14px; color: var(--suave); }
+.etiqueta {
+  display: inline-block; font-size: 13px; font-weight: 700; padding: 2px 8px;
+  border-radius: 6px; background: var(--azul-claro); color: var(--azul);
+}
+.etiqueta.Sabadell { background: #e8f6ef; color: #0f7a4a; }
+@media (prefers-color-scheme: dark) { .etiqueta.Sabadell { background: #173327; color: #5fd39c; } }
+.vacio { text-align: center; color: var(--suave); margin-top: 60px; }
+
+.cabecera-siniestro p { margin: 2px 0; }
+.carpeta { color: var(--suave); font-size: 13px; word-break: break-all; }
+.acciones { display: flex; gap: 10px; margin-top: 16px; }
+.contador { color: var(--suave); font-weight: 400; }
+
+.galeria { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.galeria img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; display: block; cursor: pointer; }
+.galeria:empty::after { content: "Sin fotos todavía."; color: var(--suave); grid-column: 1 / -1; }
+
+textarea {
+  width: 100%; font: inherit; padding: 12px; border-radius: 12px;
+  border: 1px solid var(--borde); background: var(--tarjeta); color: var(--texto); resize: vertical;
+}
+.estado { color: var(--suave); font-size: 13px; margin: 4px 0 0; min-height: 1em; }
+
+/* Cámara */
+.camara { position: fixed; inset: 0; background: #000; z-index: 10; }
+.camara video { width: 100%; height: 100%; object-fit: cover; }
+.flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity .15s; }
+.flash.on { opacity: .7; transition: none; }
+.camara-controles {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 20px 24px calc(env(safe-area-inset-bottom) + 24px);
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(transparent, rgba(0,0,0,.6));
+}
+.btn-camara { background: none; color: #fff; font-weight: 600; width: 64px; text-align: center; }
+.contador-camara { font-size: 20px; }
+.disparador {
+  width: 76px; height: 76px; border-radius: 50%; background: #fff;
+  border: 5px solid rgba(255,255,255,.4); background-clip: padding-box;
+}
+.disparador:active { transform: scale(.92); }
+
+/* Visor de foto */
+.visor { position: fixed; inset: 0; background: #000; z-index: 10; display: flex; flex-direction: column; }
+.visor img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+.visor-controles { display: flex; justify-content: space-between; padding: 16px 16px calc(env(safe-area-inset-bottom) + 16px); }
+
+/* Diálogo */
+dialog {
+  border: 0; border-radius: 16px; padding: 20px; width: min(420px, calc(100% - 32px));
+  background: var(--tarjeta); color: var(--texto);
+}
+dialog::backdrop { background: rgba(0,0,0,.4); }
+dialog label { display: block; margin-top: 12px; font-size: 14px; color: var(--suave); }
+dialog input, dialog select {
+  display: block; width: 100%; margin-top: 4px; font: inherit; padding: 10px 12px;
+  border-radius: 10px; border: 1px solid var(--borde); background: var(--fondo); color: var(--texto);
+}
+.dialogo-botones { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; align-items: center; }
+.dialogo-botones .btn-peligro { margin-right: auto; padding-left: 0; }
+.error { color: var(--rojo); font-size: 14px; min-height: 1em; margin: 8px 0 0; }

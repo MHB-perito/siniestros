@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Siniestros</title>
+<meta name="theme-color" content="#0b3a6e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Siniestros">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Lista de siniestros -->
+<section id="vista-lista" class="vista">
+  <header class="barra">
+    <h1>Siniestros</h1>
+    <button id="btn-nuevo" class="btn-primario">+ Nuevo</button>
+  </header>
+  <ul id="lista" class="lista"></ul>
+  <p id="lista-vacia" class="vacio" hidden>Aún no hay siniestros.<br>Pulsa «+ Nuevo» para crear uno.</p>
+</section>
+
+<!-- Detalle de un siniestro -->
+<section id="vista-detalle" class="vista" hidden>
+  <header class="barra">
+    <button id="btn-volver" class="btn-texto">‹ Lista</button>
+    <button id="btn-editar" class="btn-texto">Editar</button>
+  </header>
+  <div class="cabecera-siniestro">
+    <span id="det-compania" class="etiqueta"></span>
+    <h2 id="det-numero"></h2>
+    <p id="det-direccion"></p>
+    <p id="det-carpeta" class="carpeta"></p>
+  </div>
+
+  <div class="acciones">
+    <button id="btn-camara" class="btn-primario grande">📷 Cámara</button>
+    <label class="btn-secundario grande">
+      🖼️ Cámara iPhone
+      <input id="input-foto" type="file" accept="image/*" capture="environment" hidden>
+    </label>
+  </div>
+
+  <h3>Fotos <span id="num-fotos" class="contador"></span></h3>
+  <div id="galeria" class="galeria"></div>
+
+  <h3>Notas</h3>
+  <textarea id="notas" rows="10" placeholder="Escribe o dicta aquí lo de la visita…"></textarea>
+  <p id="estado-notas" class="estado"></p>
+
+  <button id="btn-sincronizar" class="btn-secundario grande ancho" disabled>☁️ Sincronizar (próximamente)</button>
+</section>
+
+<!-- Cámara a pantalla completa -->
+<section id="vista-camara" class="camara" hidden>
+  <video id="video" playsinline autoplay muted></video>
+  <div id="flash" class="flash"></div>
+  <div class="camara-controles">
+    <button id="btn-cerrar-camara" class="btn-camara">Listo</button>
+    <button id="btn-disparar" class="disparador" aria-label="Hacer foto"></button>
+    <span id="camara-contador" class="btn-camara contador-camara">0</span>
+  </div>
+</section>
+
+<!-- Ver una foto -->
+<section id="vista-foto" class="visor" hidden>
+  <img id="foto-grande" alt="">
+  <div class="visor-controles">
+    <button id="btn-borrar-foto" class="btn-peligro">Borrar</button>
+    <button id="btn-cerrar-foto" class="btn-primario">Cerrar</button>
+  </div>
+</section>
+
+<!-- Formulario nuevo / editar -->
+<dialog id="dialogo">
+  <form id="formulario" method="dialog">
+    <h2 id="dialogo-titulo">Nuevo siniestro</h2>
+    <label>Nº de siniestro
+      <input id="f-numero" required inputmode="numeric" autocomplete="off">
+    </label>
+    <label>Compañía
+      <select id="f-compania">
+        <option>Zurich</option>
+        <option>Sabadell</option>
+      </select>
+    </label>
+    <label>Dirección
+      <input id="f-direccion" required autocomplete="off">
+    </label>
+    <p id="f-error" class="error"></p>
+    <div class="dialogo-botones">
+      <button type="button" id="btn-borrar-siniestro" class="btn-peligro" hidden>Borrar</button>
+      <button type="button" id="btn-cancelar" class="btn-texto">Cancelar</button>
+      <button type="submit" class="btn-primario">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="db.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
