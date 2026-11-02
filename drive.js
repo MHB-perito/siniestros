@@ -29,7 +29,7 @@ const Drive = (() => {
     guardar("drive_pendiente", numero);
     const p = new URLSearchParams({
       client_id: CLIENT_ID, redirect_uri: REDIRECT, response_type: "token",
-      scope: SCOPE, state: estado, include_granted_scopes: "true",
+      scope: SCOPE, state: estado, include_granted_scopes: "true", prompt: "select_account",
     });
     location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + p;
   }
@@ -103,8 +103,10 @@ const Drive = (() => {
         return c.id;
       }
     }
+    // Probablemente es otra cuenta: se olvida el permiso para poder elegir otra al reintentar.
+    quitar("drive_token");
     throw new Error("No encuentro en este Google Drive la carpeta Siniestros del Escritorio del PC. " +
-      "¿Has entrado con la cuenta de Google que tiene la copia del PC?");
+      "Vuelve a pulsar «Sincronizar» y elige la cuenta de Google que tiene la copia del PC.");
   }
 
   // Usa la carpeta del siniestro si ya existe en el PC (aunque la dirección esté escrita distinta).
