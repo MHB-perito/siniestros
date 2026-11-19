@@ -309,3 +309,26 @@ h4.sub { margin: 16px 0 6px; font-size: 15px; color: var(--azul); }
 .btn-informe { background: var(--azul-vivo); color: #fff; font-weight: 700; }
 @media (prefers-color-scheme: dark) { .btn-informe { color: #0e1217; } }
 .chip.informe { background: var(--azul-claro); color: var(--azul); }
+
+/* Estado del informe y dudas del PC */
+.informe {
+  margin-top: 12px; padding: 12px 14px; border-radius: 18px; border: 1px solid var(--borde);
+  background: var(--tarjeta); box-shadow: var(--sombra);
+}
+.informe.dudas-pendientes { border: 2px solid var(--oro); }
+.informe.hecho { border: 2px solid var(--verde); }
+.informe-cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 700; }
+.informe-cab .btn-texto { font-size: 15px; white-space: nowrap; }
+.informe .estado { margin-top: 4px; }
+.duda { margin-top: 12px; }
+.duda p { margin: 0 0 6px; font-weight: 600; }
+.duda .opciones { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.duda .opciones button {
+  background: var(--fondo); color: var(--azul); border: 1px solid var(--borde); padding: 8px 12px;
+  border-radius: 999px; font-weight: 600; font-size: 15px;
+}
+.duda .opciones button.elegida { background: var(--azul-vivo); color: #fff; border-color: transparent; }
+.duda textarea { min-height: 0; padding: 10px 12px; box-shadow: none; background: var(--fondo); }
+a.btn-secundario { text-decoration: none; }
+.chip.dudas { background: #fff3dc; color: #8a5a00; }
+@media (prefers-color-scheme: dark) { .chip.dudas { background: #3a2c10; color: var(--oro); } }

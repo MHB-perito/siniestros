@@ -29,7 +29,8 @@ const Drive = (() => {
     guardar("drive_pendiente", numero);
     const p = new URLSearchParams({
       client_id: CLIENT_ID, redirect_uri: REDIRECT, response_type: "token",
-      scope: SCOPE, state: estado, include_granted_scopes: "true", prompt: "select_account",
+      scope: SCOPE, state: estado, include_granted_scopes: "true",
+      ...(leer("drive_cuenta_ok") ? {} : { prompt: "select_account" }),
     });
     location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + p;
   }
@@ -45,6 +46,7 @@ const Drive = (() => {
     quitar("drive_estado");
     if (p.get("state") !== esperado) return null;
     if (p.get("error")) return { numero: pendiente, error: "No se dio permiso a Google Drive." };
+    guardar("drive_cuenta_ok", true);
     guardar("drive_token", {
       valor: p.get("access_token"),
       expira: Date.now() + Number(p.get("expires_in") || 3600) * 1000,
@@ -105,17 +107,20 @@ const Drive = (() => {
     }
     // Probablemente es otra cuenta: se olvida el permiso para poder elegir otra al reintentar.
     quitar("drive_token");
+    quitar("drive_cuenta_ok");
     throw new Error("No encuentro en este Google Drive la carpeta Siniestros del Escritorio del PC. " +
       "Vuelve a pulsar «Sincronizar» y elige la cuenta de Google que tiene la copia del PC.");
   }
 
   // Usa la carpeta del siniestro si ya existe en el PC (aunque la dirección esté escrita distinta).
-  async function carpetaDelSiniestro(raiz, nombre, numero) {
+  async function buscarCarpetaSiniestro(raiz, nombre, numero) {
     const exacta = await buscar(`name = '${comillas(nombre)}' and mimeType = '${CARPETA}' and '${raiz}' in parents`);
     if (exacta[0]) return exacta[0].id;
     const parecidas = await buscar(`name contains '${comillas(numero)}' and mimeType = '${CARPETA}' and '${raiz}' in parents`);
-    const mismaId = parecidas.find(c => c.name.startsWith(numero + "_"));
-    return mismaId ? mismaId.id : (await crearCarpeta(nombre, raiz)).id;
+    return parecidas.find(c => c.name.startsWith(numero + "_"))?.id || null;
+  }
+  async function carpetaDelSiniestro(raiz, nombre, numero) {
+    return (await buscarCarpetaSiniestro(raiz, nombre, numero)) || (await crearCarpeta(nombre, raiz)).id;
   }
 
   async function subir(meta, contenido, tipo, idExistente) {
@@ -179,5 +184,61 @@ const Drive = (() => {
     }
   }
 
-  return { sincronizar, volverDeGoogle };
+  // ---------- Informe: estado, dudas del PC y respuestas ----------
+  // El PC deja en la carpeta del siniestro:
+  //   PEDIR_INFORME.txt → INFORME_EN_CURSO.txt → INFORME_HECHO.txt   (estado)
+  //   dudas.json  { "preguntas": [{ "id": "1", "pregunta": "…", "opciones": ["Sí", "No"] }] }
+  // y la app contesta con respuestas.json { "respuestas": [{ "id", "pregunta", "respuesta" }] }.
+  const hayPermiso = () => !!token();
+
+  async function leerTexto(id) {
+    const r = await fetch(`${API}/files/${id}?alt=media`, { headers: { Authorization: "Bearer " + token() } });
+    if (r.status === 401) { quitar("drive_token"); throw new SinPermiso(); }
+    if (!r.ok) throw new Error(`Google Drive respondió ${r.status}`);
+    return r.text();
+  }
+
+  // Devuelve { fase, dudas, respondidas, word } o null si no hay permiso (no redirige a Google).
+  async function estadoInforme(s, nombreCarpeta) {
+    if (!token() || !navigator.onLine) return null;
+    try {
+      const raiz = await carpetaSiniestros();
+      const carpeta = await buscarCarpetaSiniestro(raiz, nombreCarpeta, s.numero);
+      if (!carpeta) return { fase: "" };
+      const archivos = await buscar(`'${carpeta}' in parents`, "id,name,webViewLink,modifiedTime");
+      const hay = n => archivos.find(a => a.name.toLowerCase() === n.toLowerCase());
+      const word = archivos.filter(a => a.name.toLowerCase().endsWith(".docx") && a.name.startsWith("informe"))
+        .sort((a, b) => b.modifiedTime.localeCompare(a.modifiedTime))[0];
+      // Un pedido nuevo manda sobre un informe hecho antes.
+      const fase = hay("PEDIR_INFORME.txt") ? "pedido" : hay("INFORME_EN_CURSO.txt") ? "curso"
+        : hay("INFORME_HECHO.txt") ? "hecho" : "";
+      let dudas = [];
+      const fd = hay("dudas.json");
+      if (fd) {
+        try {
+          const j = JSON.parse((await leerTexto(fd.id)).replace(/^\uFEFF/, ""));
+          dudas = (Array.isArray(j) ? j : j.preguntas || []).map((d, i) =>
+            typeof d === "string" ? { id: String(i + 1), pregunta: d } : { id: String(d.id ?? i + 1), ...d });
+        } catch { dudas = [{ id: "1", pregunta: "El PC dejó dudas pero no se pueden leer. Míralas en la app de Claude." }]; }
+      }
+      return { fase, dudas, respondidas: !!hay("respuestas.json"), word: word ? { id: word.id, enlace: word.webViewLink, nombre: word.name } : null };
+    } catch (e) {
+      if (e instanceof SinPermiso) return null;
+      throw e;
+    }
+  }
+
+  async function responder(s, nombreCarpeta, respuestas) {
+    if (!token()) return pedirPermiso(s.numero);
+    const raiz = await carpetaSiniestros();
+    const carpeta = await carpetaDelSiniestro(raiz, nombreCarpeta, s.numero);
+    const contenido = JSON.stringify({ fecha: new Date().toISOString(), respuestas }, null, 2);
+    const texto = new Blob([contenido], { type: "application/json" });
+    const hay = await buscar(`name = 'respuestas.json' and '${carpeta}' in parents`, "id");
+    if (hay[0]) await subir({}, texto, "application/json; charset=UTF-8", hay[0].id);
+    else await subir({ name: "respuestas.json", parents: [carpeta] }, texto, "application/json; charset=UTF-8");
+    return true;
+  }
+
+  return { sincronizar, volverDeGoogle, estadoInforme, responder, hayPermiso, pedirPermiso };
 })();

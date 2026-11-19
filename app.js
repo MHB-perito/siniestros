@@ -101,7 +101,10 @@ async function pintarLista() {
     if (Guion.nombreTipo(s)) chip(Guion.nombreTipo(s));
     chip(`📷 ${fotos.length}`);
     if (s.notas) chip("📝 Notas");
-    if (s.informePedido) chip(`📄 Informe pedido ${fechaBonita(new Date(s.informePedido).toISOString().slice(0, 10))}`, "informe");
+    const ei = s.estadoInforme || {};
+    if (ei.nDudas && !ei.respondidas) chip(`❓ ${ei.nDudas} duda${ei.nDudas === 1 ? "" : "s"} del PC`, "dudas");
+    else if (ei.fase === "hecho") chip("✅ Informe hecho", "ok");
+    else if (s.informePedido) chip(`📄 Informe pedido ${fechaBonita(new Date(s.informePedido).toISOString().slice(0, 10))}`, "informe");
     if (Mediciones.hayAlgo(s)) chip("📏 Mediciones");
     if (sinSubir) chip(`${sinSubir} sin pasar al PC`, "pendiente");
     else if (fotos.length) chip("✓ En el PC", "ok");
@@ -114,7 +117,36 @@ async function pintarLista() {
     li.onclick = () => abrir(s.numero);
     ul.appendChild(li);
   }
+  revisarInformes(todos);
 }
+
+// En la lista: pregunta a Drive cómo van los informes pedidos (como mucho una vez por minuto).
+let ultimaRevision = 0;
+async function revisarInformes(todos) {
+  if (!Drive.hayPermiso() || Date.now() - ultimaRevision < 60000) return;
+  ultimaRevision = Date.now();
+  let cambio = false;
+  for (const s of todos.filter(x => x.informePedido && x.estadoInforme?.fase !== "hecho")) {
+    try {
+      const e = await Drive.estadoInforme(s, carpeta(s));
+      if (!e) return;
+      // Se relee justo antes de guardar para no pisar lo que se haya cambiado mientras tanto.
+      if (actual?.numero === s.numero) continue;   // el abierto ya se comprueba solo
+      const fresco = await DB.siniestro(s.numero);
+      if (!fresco) continue;
+      const nuevo = resumirEstado(e);
+      const { comprobado: _a, ...n1 } = nuevo, { comprobado: _b, ...n0 } = fresco.estadoInforme || {};
+      if (JSON.stringify(n1) !== JSON.stringify(n0)) {
+        await DB.guardarSiniestro({ ...fresco, estadoInforme: nuevo });
+        cambio = true;
+      }
+    } catch {}
+  }
+  if (cambio && !$("vista-lista").hidden) pintarLista();
+}
+const resumirEstado = e => ({
+  fase: e.fase, nDudas: e.dudas.length, respondidas: e.respondidas, word: e.word?.enlace || "", comprobado: Date.now(),
+});
 $("buscar").addEventListener("input", pintarLista);
 
 // ---------- Detalle ----------
@@ -137,7 +169,10 @@ async function abrir(numero) {
   const nc = (await DB.croquis(numero)).length;
   $("resumen-croquis").textContent = nc ? `(${nc})` : "";
   resumenes();
+  ultimoEstado = null;
+  pintarInforme();
   mostrar("vista-detalle");
+  if (actual.informePedido && actual.estadoInforme?.fase !== "hecho") comprobarInforme(false);
 }
 
 // (Se sigue llamando fechaVisita por dentro para no perder lo ya guardado; en pantalla es «Fecha de inspección».)
@@ -305,7 +340,11 @@ async function sincronizar(conInforme = false) {
       const fotos = `${r.fotos} foto${r.fotos === 1 ? "" : "s"} nueva${r.fotos === 1 ? "" : "s"}`;
       if (conInforme) {
         actual.informePedido = Date.now();
+        actual.estadoInforme = { fase: "pedido", nDudas: 0, respondidas: false, word: "" };
+        actual.borradorRespuestas = {};
         await tocar();
+        ultimoEstado = null;
+        pintarInforme();
         aviso(`Informe pedido ✓ (${fotos} y notas en Drive). El PC lo empezará en unos minutos; ` +
           "si tiene dudas te preguntará en la app de Claude.");
       } else {
@@ -326,6 +365,142 @@ $("btn-informe").onclick = () => {
   const aviso = faltan.length ? `\n\nFalta ${faltan.join(" y ")}; el PC te lo preguntará.` : "";
   const ya = actual.informePedido ? "\n\nYa lo pediste antes: se hará de nuevo con los datos actuales." : "";
   if (confirm(`¿Pedir al PC el informe del siniestro ${actual.numero}?${aviso}${ya}`)) sincronizar(true);
+};
+
+// ---------- Estado del informe y dudas del PC ----------
+let ultimoEstado = null;   // lo último leído de Drive para el siniestro abierto (con el texto de las dudas)
+
+function pintarInforme() {
+  const e = actual.estadoInforme;
+  const caja = $("informe");
+  caja.hidden = !actual.informePedido && !e?.fase;
+  if (caja.hidden) return;
+  const dudas = ultimoEstado?.dudas || [];
+  const pendientes = dudas.length > 0 && !ultimoEstado.respondidas;
+  caja.className = "informe" + (pendientes || (e?.nDudas && !e.respondidas) ? " dudas-pendientes" : e?.fase === "hecho" ? " hecho" : "");
+  let titulo, detalle = "";
+  if (pendientes) {
+    titulo = `❓ El PC tiene ${dudas.length} duda${dudas.length === 1 ? "" : "s"}`;
+    detalle = "Contesta aquí y pulsa «Enviar respuestas al PC». Lo que no sepas, déjalo en blanco.";
+  } else if (e?.nDudas && !e.respondidas) {
+    titulo = `❓ El PC tiene ${e.nDudas} duda${e.nDudas === 1 ? "" : "s"}`;
+    detalle = "Pulsa «Comprobar» para verlas.";
+  } else if (e?.fase === "hecho") {
+    titulo = "✅ Informe hecho";
+    detalle = "Está en la carpeta del siniestro del PC. No se ha enviado nada por correo.";
+  } else if (e?.nDudas && e.respondidas) {
+    titulo = "📨 Respuestas enviadas";
+    detalle = "El PC seguirá con el informe en unos minutos.";
+  } else if (e?.fase === "curso") {
+    titulo = "⏳ El PC está haciendo el informe";
+    detalle = "Si tiene dudas aparecerán aquí. Pulsa «Comprobar» de vez en cuando.";
+  } else if (e?.fase === "pedido") {
+    titulo = "📄 Informe pedido";
+    detalle = "Esperando a que el PC lo recoja (suele tardar 5-15 minutos).";
+  } else {
+    titulo = "📄 Informe pedido";
+    detalle = "Pulsa «Comprobar» para ver cómo va.";
+  }
+  if (e?.comprobado) detalle += ` Comprobado a las ${new Date(e.comprobado).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}.`;
+  $("informe-estado").textContent = titulo;
+  $("informe-detalle").textContent = detalle;
+  const enlace = ultimoEstado?.word?.enlace || e?.word;
+  $("btn-word").hidden = !(e?.fase === "hecho" && enlace);
+  if (enlace) $("btn-word").href = enlace;
+  pintarDudas(pendientes ? dudas : []);
+}
+
+function pintarDudas(dudas) {
+  $("form-dudas").hidden = !dudas.length;
+  const cont = $("lista-dudas");
+  cont.innerHTML = "";
+  const borrador = (actual.borradorRespuestas ||= {});
+  for (const d of dudas) {
+    const caja = document.createElement("div");
+    caja.className = "duda";
+    const p = document.createElement("p");
+    p.textContent = d.pregunta;
+    const texto = document.createElement("textarea");
+    texto.rows = 2;
+    texto.placeholder = "Tu respuesta…";
+    texto.value = borrador[d.id] || "";
+    texto.oninput = () => { borrador[d.id] = texto.value; tocar(); marcar(); };
+    caja.append(p);
+    const botones = [];
+    if (Array.isArray(d.opciones) && d.opciones.length) {
+      const fila = document.createElement("div");
+      fila.className = "opciones";
+      for (const o of d.opciones) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = o;
+        b.onclick = () => { texto.value = borrador[d.id] = o; tocar(); marcar(); };
+        botones.push(b);
+        fila.append(b);
+      }
+      caja.append(fila);
+    }
+    const marcar = () => botones.forEach(b => b.classList.toggle("elegida", b.textContent === texto.value));
+    marcar();
+    caja.append(texto);
+    cont.append(caja);
+  }
+}
+
+// interactivo: el usuario pulsó «Comprobar» (si hace falta, se va a Google a dar permiso).
+async function comprobarInforme(interactivo) {
+  const numero = actual.numero;
+  if (!Drive.hayPermiso()) {
+    if (!interactivo) return;
+    try { localStorage.setItem("tras-google", "comprobar"); } catch {}
+    return Drive.pedirPermiso(numero);
+  }
+  $("btn-comprobar").disabled = true;
+  if (interactivo) $("informe-detalle").textContent = "Comprobando en Drive…";
+  try {
+    const e = await Drive.estadoInforme(actual, carpeta(actual));
+    if (actual?.numero !== numero) return;
+    if (!e) {
+      if (interactivo) { try { localStorage.setItem("tras-google", "comprobar"); } catch {} Drive.pedirPermiso(numero); }
+      return;
+    }
+    ultimoEstado = e;
+    actual.estadoInforme = resumirEstado(e);
+    await tocar();
+    pintarInforme();
+  } catch (err) {
+    if (interactivo) $("informe-detalle").textContent = "No se pudo comprobar: " + err.message;
+  } finally {
+    $("btn-comprobar").disabled = false;
+  }
+}
+$("btn-comprobar").onclick = () => comprobarInforme(true);
+
+$("form-dudas").onsubmit = async ev => {
+  ev.preventDefault();
+  const dudas = ultimoEstado?.dudas || [];
+  const borrador = actual.borradorRespuestas || {};
+  const respuestas = dudas.map(d => ({ id: d.id, pregunta: d.pregunta, respuesta: (borrador[d.id] || "").trim() }));
+  if (!respuestas.some(r => r.respuesta)) { alert("No has contestado ninguna duda."); return; }
+  const vacias = respuestas.filter(r => !r.respuesta).length;
+  if (vacias && !confirm(`Hay ${vacias} duda${vacias === 1 ? "" : "s"} sin contestar. ¿Enviar igualmente?`)) return;
+  const boton = $("btn-responder");
+  boton.disabled = true;
+  try {
+    if (!Drive.hayPermiso()) { try { localStorage.setItem("tras-google", "responder"); } catch {} }
+    const ok = await Drive.responder(actual, carpeta(actual), respuestas);
+    if (!ok) return;   // se ha ido a Google; al volver se envían solas
+    try { localStorage.removeItem("tras-google"); } catch {}
+    ultimoEstado = { ...ultimoEstado, respondidas: true };
+    actual.estadoInforme = { ...resumirEstado(ultimoEstado), comprobado: Date.now() };
+    actual.borradorRespuestas = {};
+    await tocar();
+    pintarInforme();
+  } catch (err) {
+    $("informe-detalle").textContent = "No se pudieron enviar: " + err.message;
+  } finally {
+    boton.disabled = false;
+  }
 };
 
 // ---------- Visor ----------
@@ -410,8 +585,17 @@ document.addEventListener("visibilitychange", () => { if (document.hidden) guard
   const vuelta = Drive.volverDeGoogle();
   if (!vuelta?.numero || !await DB.siniestro(vuelta.numero)) return;
   await abrir(vuelta.numero);
-  let conInforme = false;
-  try { conInforme = localStorage.getItem("pedir-informe") === vuelta.numero; } catch {}
+  let conInforme = false, tras = null;
+  try {
+    conInforme = localStorage.getItem("pedir-informe") === vuelta.numero;
+    tras = localStorage.getItem("tras-google");
+    localStorage.removeItem("tras-google");
+  } catch {}
   if (vuelta.error) $("estado-sync").textContent = vuelta.error;
+  else if (tras === "comprobar") comprobarInforme(true);
+  else if (tras === "responder") {
+    await comprobarInforme(true);
+    if (!$("form-dudas").hidden) $("form-dudas").requestSubmit();
+  }
   else sincronizar(conInforme);
 })();
