@@ -54,7 +54,7 @@ async function guardarArchivos(archivos) {
 }
 
 function mostrar(vista) {
-  for (const v of ["vista-lista", "vista-detalle", "vista-camara", "vista-foto", "vista-croquis"]) $(v).hidden = v !== vista;
+  for (const v of ["vista-lista", "vista-detalle", "vista-camara", "vista-foto", "vista-croquis", "vista-pdf"]) $(v).hidden = v !== vista;
   window.scrollTo(0, 0);
 }
 
@@ -172,7 +172,7 @@ async function abrir(numero) {
   ultimoEstado = null;
   pintarInforme();
   mostrar("vista-detalle");
-  if (actual.informePedido && actual.estadoInforme?.fase !== "hecho") comprobarInforme(false);
+  if (actual.informePedido && (actual.estadoInforme?.fase !== "hecho" || !actual.informePdf)) comprobarInforme(false);
 }
 
 // (Se sigue llamando fechaVisita por dentro para no perder lo ya guardado; en pantalla es «Fecha de inspección».)
@@ -407,6 +407,8 @@ function pintarInforme() {
   const enlace = ultimoEstado?.word?.enlace || e?.word;
   $("btn-word").hidden = !(e?.fase === "hecho" && enlace);
   if (enlace) $("btn-word").href = enlace;
+  $("btn-pdf").hidden = !actual.informePdf;
+  if (e?.fase === "hecho" && !actual.informePdf) $("informe-detalle").textContent += " El PDF aún no está en la carpeta.";
   pintarDudas(pendientes ? dudas : []);
 }
 
@@ -468,6 +470,15 @@ async function comprobarInforme(interactivo) {
     actual.estadoInforme = resumirEstado(e);
     await tocar();
     pintarInforme();
+    // El PDF del informe se guarda en el iPhone para verlo dentro de la app (también sin conexión).
+    if (e.pdf && actual.informePdf?.modificado !== e.pdf.modificado) {
+      $("informe-detalle").textContent = "Descargando el PDF del informe…";
+      const blob = await Drive.descargar(e.pdf.id);
+      if (actual?.numero !== numero) return;
+      actual.informePdf = { blob, nombre: e.pdf.nombre, modificado: e.pdf.modificado };
+      await tocar();
+      pintarInforme();
+    }
   } catch (err) {
     if (interactivo) $("informe-detalle").textContent = "No se pudo comprobar: " + err.message;
   } finally {
@@ -501,6 +512,50 @@ $("form-dudas").onsubmit = async ev => {
   } finally {
     boton.disabled = false;
   }
+};
+
+// ---------- Lector del PDF del informe ----------
+let pdfjs = null;
+let pdfAbierto = 0;   // para cancelar el pintado si se cierra a medias
+$("btn-pdf").onclick = async () => {
+  const pdf = actual.informePdf;
+  if (!pdf) return;
+  const yo = ++pdfAbierto;
+  const cont = $("pdf-paginas");
+  cont.innerHTML = "<p>Abriendo el informe…</p>";
+  $("pdf-titulo").textContent = pdf.nombre.replace(/\.pdf$/i, "");
+  const archivo = new File([pdf.blob], pdf.nombre, { type: "application/pdf" });
+  $("btn-compartir-pdf").hidden = !navigator.canShare?.({ files: [archivo] });
+  $("btn-compartir-pdf").onclick = () => navigator.share({ files: [archivo], title: pdf.nombre }).catch(() => {});
+  mostrar("vista-pdf");
+  try {
+    if (!pdfjs) {
+      pdfjs = await import("./pdfjs/pdf.min.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs/pdf.worker.min.mjs", location.href).href;
+    }
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(await pdf.blob.arrayBuffer()) }).promise;
+    if (yo !== pdfAbierto) return;
+    cont.innerHTML = "";
+    const ancho = cont.clientWidth - 16;
+    const nitidez = Math.min(window.devicePixelRatio || 1, 2) * 1.5;   // permite ampliar con los dedos
+    for (let n = 1; n <= doc.numPages; n++) {
+      const pagina = await doc.getPage(n);
+      if (yo !== pdfAbierto) return;
+      const vista = pagina.getViewport({ scale: (ancho / pagina.getViewport({ scale: 1 }).width) * nitidez });
+      const c = document.createElement("canvas");
+      c.width = Math.floor(vista.width);
+      c.height = Math.floor(vista.height);
+      cont.appendChild(c);
+      await pagina.render({ canvasContext: c.getContext("2d"), viewport: vista }).promise;
+    }
+  } catch (err) {
+    if (yo === pdfAbierto) cont.innerHTML = `<p>No se pudo abrir el PDF: ${err.message}</p>`;
+  }
+};
+$("btn-cerrar-pdf").onclick = () => {
+  pdfAbierto++;
+  $("pdf-paginas").innerHTML = "";   // libera la memoria de las páginas
+  mostrar("vista-detalle");
 };
 
 // ---------- Visor ----------

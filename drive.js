@@ -207,8 +207,9 @@ const Drive = (() => {
       if (!carpeta) return { fase: "" };
       const archivos = await buscar(`'${carpeta}' in parents`, "id,name,webViewLink,modifiedTime");
       const hay = n => archivos.find(a => a.name.toLowerCase() === n.toLowerCase());
-      const word = archivos.filter(a => a.name.toLowerCase().endsWith(".docx") && a.name.startsWith("informe"))
+      const ultimo = ext => archivos.filter(a => a.name.toLowerCase().endsWith(ext) && a.name.toLowerCase().startsWith("informe"))
         .sort((a, b) => b.modifiedTime.localeCompare(a.modifiedTime))[0];
+      const word = ultimo(".docx"), pdf = ultimo(".pdf");
       // Un pedido nuevo manda sobre un informe hecho antes.
       const fase = hay("PEDIR_INFORME.txt") ? "pedido" : hay("INFORME_EN_CURSO.txt") ? "curso"
         : hay("INFORME_HECHO.txt") ? "hecho" : "";
@@ -221,11 +222,23 @@ const Drive = (() => {
             typeof d === "string" ? { id: String(i + 1), pregunta: d } : { id: String(d.id ?? i + 1), ...d });
         } catch { dudas = [{ id: "1", pregunta: "El PC dejó dudas pero no se pueden leer. Míralas en la app de Claude." }]; }
       }
-      return { fase, dudas, respondidas: !!hay("respuestas.json"), word: word ? { id: word.id, enlace: word.webViewLink, nombre: word.name } : null };
+      return {
+        fase, dudas, respondidas: !!hay("respuestas.json"),
+        word: word ? { id: word.id, enlace: word.webViewLink, nombre: word.name } : null,
+        pdf: pdf ? { id: pdf.id, nombre: pdf.name, modificado: pdf.modifiedTime } : null,
+      };
     } catch (e) {
       if (e instanceof SinPermiso) return null;
       throw e;
     }
+  }
+
+  // Descarga un archivo de Drive (el PDF del informe) como Blob.
+  async function descargar(id) {
+    const r = await fetch(`${API}/files/${id}?alt=media`, { headers: { Authorization: "Bearer " + token() } });
+    if (r.status === 401) { quitar("drive_token"); throw new SinPermiso(); }
+    if (!r.ok) throw new Error(`Google Drive respondió ${r.status}`);
+    return r.blob();
   }
 
   async function responder(s, nombreCarpeta, respuestas) {
@@ -240,5 +253,5 @@ const Drive = (() => {
     return true;
   }
 
-  return { sincronizar, volverDeGoogle, estadoInforme, responder, hayPermiso, pedirPermiso };
+  return { sincronizar, volverDeGoogle, estadoInforme, responder, descargar, hayPermiso, pedirPermiso };
 })();

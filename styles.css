@@ -332,3 +332,19 @@ h4.sub { margin: 16px 0 6px; font-size: 15px; color: var(--azul); }
 a.btn-secundario { text-decoration: none; }
 .chip.dudas { background: #fff3dc; color: #8a5a00; }
 @media (prefers-color-scheme: dark) { .chip.dudas { background: #3a2c10; color: var(--oro); } }
+
+/* Lector del informe en PDF */
+.enlace-word { display: block; text-align: center; margin-top: 6px; font-size: 15px; text-decoration: none; }
+.lector { position: fixed; inset: 0; z-index: 10; background: #525659; display: flex; flex-direction: column; }
+.lector-barra {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: calc(env(safe-area-inset-top) + 6px) 14px 6px; background: var(--tarjeta);
+  border-bottom: 1px solid var(--borde);
+}
+.lector-titulo { flex: 1; text-align: center; font-size: 14px; color: var(--suave); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lector-paginas {
+  flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 10px 8px calc(env(safe-area-inset-bottom) + 10px);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.lector-paginas canvas { width: 100%; height: auto; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,.4); }
+.lector-paginas p { color: #fff; text-align: center; }

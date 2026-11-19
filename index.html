@@ -69,7 +69,8 @@
       <div id="lista-dudas"></div>
       <button id="btn-responder" class="btn-primario grande ancho-total">Enviar respuestas al PC</button>
     </form>
-    <a id="btn-word" class="btn-secundario grande ancho-total" target="_blank" rel="noopener" hidden>📄 Abrir el informe (Word)</a>
+    <button id="btn-pdf" class="btn-primario grande ancho-total" hidden>📄 Ver informe (PDF)</button>
+    <a id="btn-word" class="btn-texto enlace-word" target="_blank" rel="noopener" hidden>Abrir el Word en Drive</a>
   </div>
 
   <details class="seccion" data-seccion="fotos" open>
@@ -167,6 +168,16 @@
     <button id="cq-goma" class="grosor">Goma</button>
     <button id="cq-borrar" class="btn-peligro">Borrar</button>
   </div>
+</section>
+
+<!-- Ver el informe en PDF -->
+<section id="vista-pdf" class="lector" hidden>
+  <div class="lector-barra">
+    <button id="btn-cerrar-pdf" class="btn-texto">‹ Cerrar</button>
+    <span id="pdf-titulo" class="lector-titulo"></span>
+    <button id="btn-compartir-pdf" class="btn-texto" hidden>Compartir</button>
+  </div>
+  <div id="pdf-paginas" class="lector-paginas"></div>
 </section>
 
 <!-- Ver una foto -->
