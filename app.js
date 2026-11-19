@@ -15,6 +15,44 @@ const dos = n => String(n).padStart(2, "0");
 const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`; };
 const fechaBonita = f => f ? f.split("-").reverse().join("/") : "";
 
+// ---------- Fotos más ligeras ----------
+// Toda foto (cámara, cámara iPhone o galería) se reduce antes de guardarla: lado largo de 2000 px
+// y JPEG al 80 %. Pasa de 3-6 MB a unos 400-700 KB y sigue viéndose nítida en el informe.
+const LADO_MAX = 2000;
+const CALIDAD = 0.8;
+async function aligerar(origen) {
+  let img, url;
+  if (origen instanceof Blob) {
+    url = URL.createObjectURL(origen);
+    img = new Image();
+    img.src = url;
+    try { await img.decode(); }
+    catch { URL.revokeObjectURL(url); return origen; }   // formato que Safari no sabe leer: se guarda tal cual
+  } else img = origen;                                    // <video> de la cámara de la app
+  const w = img.naturalWidth || img.videoWidth, h = img.naturalHeight || img.videoHeight;
+  const k = Math.min(1, LADO_MAX / Math.max(w, h));
+  const c = document.createElement("canvas");
+  c.width = Math.round(w * k);
+  c.height = Math.round(h * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  if (url) URL.revokeObjectURL(url);
+  const blob = await new Promise(ok => c.toBlob(ok, "image/jpeg", CALIDAD));
+  c.width = c.height = 0;   // libera memoria en el iPhone
+  return blob && (!(origen instanceof Blob) || blob.size < origen.size) ? blob : origen;
+}
+
+// Guarda varias fotos del móvil (cámara iPhone o galería) ya aligeradas.
+async function guardarArchivos(archivos) {
+  const lista = [...archivos];
+  for (let i = 0; i < lista.length; i++) {
+    $("estado-fotos").textContent = `Guardando foto ${i + 1} de ${lista.length}…`;
+    await DB.añadirFoto(actual.numero, await aligerar(lista[i]));
+  }
+  $("estado-fotos").textContent = lista.length > 1 ? `${lista.length} fotos añadidas ✓` : "";
+  await tocar();
+  await pintarGaleria();
+}
+
 function mostrar(vista) {
   for (const v of ["vista-lista", "vista-detalle", "vista-camara", "vista-foto", "vista-croquis"]) $(v).hidden = v !== vista;
   window.scrollTo(0, 0);
@@ -59,9 +97,11 @@ async function pintarLista() {
       li.querySelector(".meta").appendChild(c);
     };
     if (s.fechaVisita) chip(`📅 ${fechaBonita(s.fechaVisita)}`);
+    if (s.modalidad) chip(s.modalidad);
     if (Guion.nombreTipo(s)) chip(Guion.nombreTipo(s));
     chip(`📷 ${fotos.length}`);
     if (s.notas) chip("📝 Notas");
+    if (s.informePedido) chip(`📄 Informe pedido ${fechaBonita(new Date(s.informePedido).toISOString().slice(0, 10))}`, "informe");
     if (Mediciones.hayAlgo(s)) chip("📏 Mediciones");
     if (sinSubir) chip(`${sinSubir} sin pasar al PC`, "pendiente");
     else if (fotos.length) chip("✓ En el PC", "ok");
@@ -86,17 +126,27 @@ async function abrir(numero) {
   $("det-compania").className = `etiqueta ${actual.compania}`;
   $("det-carpeta").textContent = `Carpeta: Siniestros/${carpeta(actual)}`;
   $("det-fecha").value = actual.fechaVisita || "";
+  $("det-modalidad").value = actual.modalidad || "";
+  $("estado-fotos").textContent = "";
   $("notas").value = actual.notas || "";
   $("estado-notas").textContent = "";
   await pintarGaleria();
   Guion.pintar();
   Mediciones.pintar();
   await Croquis.pintar();
+  const nc = (await DB.croquis(numero)).length;
+  $("resumen-croquis").textContent = nc ? `(${nc})` : "";
+  resumenes();
   mostrar("vista-detalle");
 }
 
+// (Se sigue llamando fechaVisita por dentro para no perder lo ya guardado; en pantalla es «Fecha de inspección».)
 $("det-fecha").onchange = async () => {
   actual.fechaVisita = $("det-fecha").value;
+  await tocar();
+};
+$("det-modalidad").onchange = async () => {
+  actual.modalidad = $("det-modalidad").value;
   await tocar();
 };
 
@@ -121,8 +171,25 @@ async function pintarGaleria() {
 
 async function tocar() {
   actual.actualizado = Date.now();
+  resumenes();
   await DB.guardarSiniestro(actual);
 }
+
+// Lo que se ve en la cabecera de cada bloque aunque esté plegado.
+function resumenes() {
+  if (!actual) return;
+  const n = (actual.terceros || []).filter(t => t.nombre?.trim() || t.telefono?.trim()).length;
+  $("resumen-terceros").textContent = n ? `(${n})` : "";
+  $("resumen-notas").textContent = actual.notas?.trim() ? "✓" : "";
+  $("resumen-mediciones").textContent = Mediciones.resumen(actual);
+}
+
+// Bloques plegables: el iPhone recuerda cuáles dejaste abiertos.
+document.querySelectorAll(".seccion").forEach(d => {
+  const clave = "seccion-" + d.dataset.seccion;
+  try { const v = localStorage.getItem(clave); if (v !== null) d.open = v === "1"; } catch {}
+  d.addEventListener("toggle", () => { try { localStorage.setItem(clave, d.open ? "1" : "0"); } catch {} });
+});
 
 // Las notas se guardan solas mientras se escribe.
 let temporizador;
@@ -135,7 +202,7 @@ async function guardarNotas() {
   clearTimeout(temporizador);
   if (!actual || actual.notas === $("notas").value) return;
   actual.notas = $("notas").value;
-  // Si no se ha puesto otra, la fecha de visita es el día en que se empiezan las notas.
+  // Si no se ha puesto otra, la fecha de inspección es el día en que se empiezan las notas.
   if (!actual.fechaVisita && actual.notas.trim()) $("det-fecha").value = actual.fechaVisita = hoy();
   await tocar();
   $("estado-notas").textContent = "Guardado en el iPhone ✓";
@@ -168,14 +235,9 @@ $("btn-camara").onclick = async () => {
 $("btn-disparar").onclick = async () => {
   const v = $("video");
   if (!v.videoWidth) return;
-  const c = document.createElement("canvas");
-  c.width = v.videoWidth;
-  c.height = v.videoHeight;
-  c.getContext("2d").drawImage(v, 0, 0);
   $("flash").classList.add("on");
   setTimeout(() => $("flash").classList.remove("on"), 80);
-  const blob = await new Promise(ok => c.toBlob(ok, "image/jpeg", 0.9));
-  await DB.añadirFoto(actual.numero, blob);
+  await DB.añadirFoto(actual.numero, await aligerar(v));
   $("camara-contador").textContent = String(+$("camara-contador").textContent + 1);
 };
 
@@ -189,37 +251,82 @@ $("btn-cerrar-camara").onclick = async () => {
 
 // Cámara nativa del iPhone (más calidad, enfoque y flash). La foto tampoco va al carrete.
 $("input-foto").onchange = async e => {
-  for (const f of e.target.files) await DB.añadirFoto(actual.numero, f);
+  const archivos = [...e.target.files];
   e.target.value = "";
-  await tocar();
-  await pintarGaleria();
+  await guardarArchivos(archivos);
+};
+
+// Fotos que ya están en la galería del iPhone (por ejemplo, las que manda el asegurado).
+// Se copian a la app; las originales siguen en la galería.
+$("input-galeria").onchange = async e => {
+  const archivos = [...e.target.files];
+  e.target.value = "";
+  await guardarArchivos(archivos);
 };
 
 // ---------- Sincronizar con Google Drive ----------
-async function sincronizar() {
+// conInforme: además deja en la carpeta PEDIR_INFORME.txt para que el PC haga el informe.
+async function sincronizar(conInforme = false) {
   await guardarNotas();
-  const boton = $("btn-sincronizar");
+  const botones = [$("btn-sincronizar"), $("btn-informe")];
   const aviso = t => { $("estado-sync").textContent = t; };
-  boton.disabled = true;
+  botones.forEach(b => b.disabled = true);
+  // Por si hay que ir a Google a dar permiso: al volver se sigue pidiendo el informe.
+  try { conInforme ? localStorage.setItem("pedir-informe", actual.numero) : localStorage.removeItem("pedir-informe"); } catch {}
   try {
     const notas = [
-      actual.fechaVisita ? `Fecha de visita: ${fechaBonita(actual.fechaVisita)}` : "",
+      [actual.fechaVisita ? `Fecha de inspección: ${fechaBonita(actual.fechaVisita)}` : "",
+       actual.modalidad ? `Tipo de inspección: ${actual.modalidad}` +
+         (actual.modalidad === "Se contacta" ? " (sin visita; informe con las fotos que aporta el asegurado)" : "") : "",
+      ].filter(Boolean).join("\n"),
       Guion.texto(actual),
+      Mediciones.texto(actual),
       actual.notas?.trim() ? `Notas:\n${actual.notas.trim()}` : "",
     ].filter(Boolean).join("\n\n") + "\n";
-    const r = await Drive.sincronizar(actual, carpeta(actual), { "notas.txt": notas }, aviso);
+    const textos = { "notas.txt": notas };
+    if (conInforme) {
+      const total = (await DB.fotos(actual.numero)).length;
+      const ahora = new Date();
+      textos["PEDIR_INFORME.txt"] = [
+        `Informe pedido desde el iPhone el ${ahora.toLocaleString("es-ES")}.`,
+        `Siniestro: ${actual.numero}`,
+        `Compañía: ${actual.compania}`,
+        `Dirección: ${actual.direccion}`,
+        `Tipo de inspección: ${actual.modalidad || "sin indicar"}`,
+        `Fotos en total: ${total}`,
+        "",
+        "Espera a que la carpeta fotos tenga todas las fotos antes de empezar.",
+      ].join("\n") + "\n";
+    }
+    const r = await Drive.sincronizar(actual, carpeta(actual), textos, aviso);
     if (r) {
+      try { localStorage.removeItem("pedir-informe"); } catch {}
       await pintarGaleria();
-      aviso(`Hecho ✓ ${r.fotos} foto${r.fotos === 1 ? "" : "s"} nueva${r.fotos === 1 ? "" : "s"} y notas en Drive. ` +
-        "En unos minutos estarán en la carpeta del PC.");
+      const fotos = `${r.fotos} foto${r.fotos === 1 ? "" : "s"} nueva${r.fotos === 1 ? "" : "s"}`;
+      if (conInforme) {
+        actual.informePedido = Date.now();
+        await tocar();
+        aviso(`Informe pedido ✓ (${fotos} y notas en Drive). El PC lo empezará en unos minutos; ` +
+          "si tiene dudas te preguntará en la app de Claude.");
+      } else {
+        aviso(`Hecho ✓ ${fotos} y notas en Drive. En unos minutos estarán en la carpeta del PC.`);
+      }
     }
   } catch (e) {
     aviso("No se pudo sincronizar: " + e.message);
   } finally {
-    boton.disabled = false;
+    botones.forEach(b => b.disabled = false);
   }
 }
-$("btn-sincronizar").onclick = sincronizar;
+$("btn-sincronizar").onclick = () => sincronizar(false);
+$("btn-informe").onclick = () => {
+  const faltan = [];
+  if (!actual.modalidad) faltan.push("el tipo de inspección");
+  if (!actual.tipo) faltan.push("el tipo de siniestro");
+  const aviso = faltan.length ? `\n\nFalta ${faltan.join(" y ")}; el PC te lo preguntará.` : "";
+  const ya = actual.informePedido ? "\n\nYa lo pediste antes: se hará de nuevo con los datos actuales." : "";
+  if (confirm(`¿Pedir al PC el informe del siniestro ${actual.numero}?${aviso}${ya}`)) sincronizar(true);
+};
 
 // ---------- Visor ----------
 function verFoto(f, url) {
@@ -303,6 +410,8 @@ document.addEventListener("visibilitychange", () => { if (document.hidden) guard
   const vuelta = Drive.volverDeGoogle();
   if (!vuelta?.numero || !await DB.siniestro(vuelta.numero)) return;
   await abrir(vuelta.numero);
+  let conInforme = false;
+  try { conInforme = localStorage.getItem("pedir-informe") === vuelta.numero; } catch {}
   if (vuelta.error) $("estado-sync").textContent = vuelta.error;
-  else sincronizar();
+  else sincronizar(conInforme);
 })();

@@ -26,6 +26,17 @@ const Guion = (() => {
         "Origen reparado o pendiente",
       ],
     },
+    terraza_propia: {
+      nombre: "Filtraciones por terraza propia",
+      puntos: [
+        "Terraza causante y estancias afectadas debajo",
+        "Impermeabilización: tipo, antigüedad y estado (juntas, solería, sumideros)",
+        "Desagües y sumideros: atascos o roturas",
+        "Daños propios y daños a terceros (vivienda inferior)",
+        "Fecha de aparición de los daños",
+        "Origen reparado o pendiente y quién repara",
+      ],
+    },
     tuberia: {
       nombre: "Filtración de terceros — tubería",
       puntos: [
@@ -44,6 +55,17 @@ const Guion = (() => {
         "Daños a terceros o al contenido",
         "Quién repara el origen (fontanero propio o de la compañía)",
         "Superficie afectada y partidas",
+      ],
+    },
+    danos_terceros: {
+      nombre: "Daños de agua causados a terceros",
+      puntos: [
+        "Origen en la vivienda asegurada (elemento que fuga y ubicación)",
+        "Origen reparado y fecha de la reparación",
+        "Vivienda perjudicada (planta y letra) y estancias afectadas",
+        "Daños en el perjudicado (superficie, acabados, contenido)",
+        "¿Tiene el perjudicado su propio seguro? (compañía y nº de siniestro)",
+        "Presupuesto o valoración de los daños del perjudicado",
       ],
     },
     viento: {
@@ -68,6 +90,29 @@ const Guion = (() => {
         "Facturas o informe técnico de reparabilidad",
       ],
     },
+    incendio: {
+      nombre: "Incendio",
+      puntos: [
+        "Fecha, hora y origen del fuego",
+        "Causa probable (eléctrica, cocina, chimenea, accidental…)",
+        "Intervención de bomberos o policía (informe / atestado)",
+        "Estancias afectadas por fuego, humo y hollín",
+        "Daños en continente y en contenido",
+        "Daños a terceros o a zonas comunes",
+        "Medidas urgentes (limpieza, desescombro, cierre provisional)",
+      ],
+    },
+    cristales: {
+      nombre: "Rotura de cristales",
+      puntos: [
+        "Elemento roto (ventana, puerta, mampara, vitrocerámica, espejo…)",
+        "Ubicación y medidas del vidrio",
+        "Tipo de vidrio (simple, doble, laminado, templado)",
+        "Causa de la rotura y fecha",
+        "Reposición provisional o definitiva hecha",
+        "Presupuesto o factura aportada",
+      ],
+    },
     robo: {
       nombre: "Robo",
       puntos: [
@@ -82,7 +127,7 @@ const Guion = (() => {
     },
     otro: { nombre: "Otro", puntos: [] },
   };
-  const ROLES = ["Causante", "Administrador de la comunidad", "Presidente de la comunidad", "Inquilino", "Otro"];
+  const ROLES = ["Perjudicado", "Causante", "Administrador de la comunidad", "Presidente de la comunidad", "Inquilino", "Otro"];
   const CAMPOS = [   // datos de cada tercero
     ["nombre", "Nombre", "text"],
     ["telefono", "Teléfono", "tel"],
@@ -170,7 +215,8 @@ const Guion = (() => {
     });
   }
   $("btn-tercero").onclick = () => {
-    const rol = ["terraza", "tuberia"].includes(actual.tipo) ? "Causante" : ROLES[0];
+    const rol = ["terraza", "tuberia"].includes(actual.tipo) ? "Causante"
+      : ["danos_terceros", "terraza_propia"].includes(actual.tipo) ? "Perjudicado" : "Causante";
     (actual.terceros ||= []).push({ rol });
     tocar();
     pintarTerceros();

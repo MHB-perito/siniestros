@@ -152,7 +152,7 @@ textarea:focus { border-color: var(--azul-vivo); }
 .estado { color: var(--suave); font-size: 13px; margin: 6px 0 0; min-height: 1em; }
 
 .fecha-visita { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 15px; color: var(--suave); }
-.fecha-visita input {
+.fecha-visita input, .fecha-visita select {
   font: inherit; color: var(--texto); background: var(--fondo); border: 1px solid var(--borde);
   border-radius: 10px; padding: 6px 10px; min-height: 38px;
 }
@@ -272,3 +272,40 @@ dialog input, dialog select {
 .dialogo-botones { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; align-items: center; }
 .dialogo-botones .btn-peligro { margin-right: auto; padding-left: 0; }
 .error { color: var(--rojo); font-size: 14px; min-height: 1em; margin: 8px 0 0; }
+
+
+/* Bloques plegables de la ficha */
+.seccion {
+  background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 18px; box-shadow: var(--sombra);
+  margin-top: 12px; padding: 0 14px;
+}
+.seccion > summary { list-style: none; cursor: pointer; display: flex; align-items: center; padding: 14px 0; }
+.seccion > summary::-webkit-details-marker { display: none; }
+.seccion > summary h3 { margin: 0; flex: 1; font-size: 17px; }
+.seccion > summary::after {
+  content: ""; width: 9px; height: 9px; border-right: 2.5px solid var(--suave); border-bottom: 2.5px solid var(--suave);
+  transform: rotate(45deg); margin: -4px 4px 0 10px; transition: transform .15s;
+}
+.seccion[open] > summary::after { transform: rotate(-135deg); margin-top: 4px; }
+.seccion[open] { padding-bottom: 14px; }
+.seccion > summary + * { margin-top: 0; }
+.seccion .subtitulo:first-of-type { margin-top: 0; }
+.seccion .contador { font-size: 14px; margin-left: 4px; }
+.seccion .estancia, .seccion .tercero, .seccion .punto { background: var(--fondo); box-shadow: none; }
+.seccion .tercero input, .seccion .medida input, .seccion .medida select { background: var(--tarjeta); }
+.seccion textarea { box-shadow: none; background: var(--fondo); }
+.ancho-total { width: 100%; margin-top: 10px; }
+.galeria:not(:empty) { margin-top: 10px; }
+h4.sub { margin: 16px 0 6px; font-size: 15px; color: var(--azul); }
+.seccion .subtitulo + h4.sub { margin-top: 4px; }
+.medida.generica { grid-template-columns: 1fr 66px 32px; }
+.medida.generica input.nombre { text-align: left; grid-column: 1 / -1; }
+.resumen-partidas {
+  margin-top: 14px; padding: 10px 14px; border-radius: 14px; background: var(--azul-claro); color: var(--azul);
+  font-size: 15px;
+}
+.resumen-partidas b { display: block; margin-bottom: 4px; }
+.resumen-partidas div { display: flex; justify-content: space-between; gap: 8px; }
+.btn-informe { background: var(--azul-vivo); color: #fff; font-weight: 700; }
+@media (prefers-color-scheme: dark) { .btn-informe { color: #0e1217; } }
+.chip.informe { background: var(--azul-claro); color: var(--azul); }

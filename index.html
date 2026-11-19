@@ -45,49 +45,81 @@
     <span id="det-compania" class="etiqueta"></span>
     <h2 id="det-numero"></h2>
     <p id="det-direccion" class="ficha-dir"></p>
-    <label class="fecha-visita">📅 Fecha de visita
+    <label class="fecha-visita">📅 Fecha de inspección
       <input id="det-fecha" type="date">
+    </label>
+    <label class="fecha-visita">🔎 Tipo de inspección
+      <select id="det-modalidad">
+        <option value="">Elige…</option>
+        <option>Visita presencial</option>
+        <option>Video peritación</option>
+        <option>Se contacta</option>
+      </select>
     </label>
     <p id="det-carpeta" class="carpeta"></p>
   </div>
 
-  <h3>📷 Fotos <span id="num-fotos" class="contador"></span></h3>
-  <div class="acciones">
-    <button id="btn-camara" class="btn-primario grande">📷 Cámara</button>
-    <label class="btn-secundario grande">
-      📸 Cámara iPhone
-      <input id="input-foto" type="file" accept="image/*" capture="environment" hidden>
+  <details class="seccion" data-seccion="fotos" open>
+    <summary><h3>📷 Fotos <span id="num-fotos" class="contador"></span></h3></summary>
+    <div class="acciones">
+      <button id="btn-camara" class="btn-primario grande">📷 Cámara</button>
+      <label class="btn-secundario grande">
+        📸 Cámara iPhone
+        <input id="input-foto" type="file" accept="image/*" capture="environment" hidden>
+      </label>
+    </div>
+    <label class="btn-secundario grande ancho-total galeria-btn">
+      🖼️ Añadir desde la galería
+      <input id="input-galeria" type="file" accept="image/*" multiple hidden>
     </label>
-  </div>
-  <div id="galeria" class="galeria con-margen"></div>
+    <p id="estado-fotos" class="estado"></p>
+    <div id="galeria" class="galeria"></div>
+  </details>
 
-  <h3>📋 Tipo de siniestro <span id="checklist-cuenta" class="contador"></span></h3>
-  <select id="tipo-siniestro" class="selector"></select>
-  <div id="checklist" class="checklist"></div>
+  <details class="seccion" data-seccion="tipo">
+    <summary><h3>📋 Tipo de siniestro <span id="checklist-cuenta" class="contador"></span></h3></summary>
+    <select id="tipo-siniestro" class="selector"></select>
+    <div id="checklist" class="checklist"></div>
+  </details>
 
-  <h3>📝 Notas</h3>
-  <textarea id="notas" rows="10" placeholder="Escribe o dicta aquí lo de la visita…"></textarea>
-  <p id="estado-notas" class="estado"></p>
+  <details class="seccion" data-seccion="notas" open>
+    <summary><h3>📝 Notas <span id="resumen-notas" class="contador"></span></h3></summary>
+    <textarea id="notas" rows="10" placeholder="Escribe o dicta aquí lo de la visita…"></textarea>
+    <p id="estado-notas" class="estado"></p>
+  </details>
 
-  <h3>👥 Terceros implicados</h3>
-  <p class="subtitulo">Causante, administrador de la comunidad…</p>
-  <div id="terceros"></div>
-  <button id="btn-tercero" class="btn-secundario grande bloque">+ Añadir contacto</button>
+  <details class="seccion" data-seccion="terceros">
+    <summary><h3>👥 Terceros implicados <span id="resumen-terceros" class="contador"></span></h3></summary>
+    <p class="subtitulo">Perjudicado, causante, administrador de la comunidad…</p>
+    <div id="terceros"></div>
+    <button id="btn-tercero" class="btn-secundario grande ancho-total">+ Añadir contacto</button>
+  </details>
 
-  <h3>📏 Mediciones</h3>
-  <p class="subtitulo">Solo para ti: no se pasan al PC ni se usan en el informe.</p>
-  <form id="form-estancia" class="nueva-estancia">
-    <input id="nueva-estancia" placeholder="Escribe la estancia (salón, cocina…)" autocomplete="off" enterkeyhint="done">
-    <button class="btn-primario">Añadir</button>
-  </form>
-  <div id="mediciones"></div>
+  <details class="seccion" data-seccion="mediciones">
+    <summary><h3>📏 Mediciones <span id="resumen-mediciones" class="contador"></span></h3></summary>
+    <p class="subtitulo">Pasan al PC para la valoración del informe.</p>
+    <h4 class="sub">Por estancias</h4>
+    <form id="form-estancia" class="nueva-estancia">
+      <input id="nueva-estancia" placeholder="Escribe la estancia (salón, cocina…)" autocomplete="off" enterkeyhint="done">
+      <button class="btn-primario">Añadir</button>
+    </form>
+    <div id="mediciones"></div>
+    <h4 class="sub">Mediciones genéricas</h4>
+    <p class="subtitulo">Sin estancia: por ejemplo «Pintura plástica en techos 19 m²».</p>
+    <div id="mediciones-genericas"></div>
+    <button id="btn-generica" class="btn-secundario grande ancho-total">+ Añadir medición genérica</button>
+    <div id="resumen-partidas"></div>
+  </details>
 
-  <h3>✏️ Croquis</h3>
-  <p class="subtitulo">Solo para ti: los croquis no se pasan al PC.</p>
-  <button id="btn-nuevo-croquis" class="btn-secundario grande bloque">✏️ Abrir pizarra para pintar</button>
-  <div id="lista-croquis" class="galeria croquis"></div>
+  <details class="seccion" data-seccion="croquis">
+    <summary><h3>✏️ Croquis <span id="resumen-croquis" class="contador"></span></h3></summary>
+    <p class="subtitulo">Solo para ti: los croquis no se pasan al PC.</p>
+    <button id="btn-nuevo-croquis" class="btn-secundario grande ancho-total">✏️ Abrir pizarra para pintar</button>
+    <div id="lista-croquis" class="galeria croquis"></div>
+  </details>
 
   <button id="btn-sincronizar" class="btn-sync grande ancho">☁️ Sincronizar con el PC</button>
+  <button id="btn-informe" class="btn-informe grande ancho-total">📄 Generar informe</button>
   <p id="estado-sync" class="estado"></p>
 </section>
 
