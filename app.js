@@ -293,9 +293,9 @@ async function sincronizar(conInforme = false) {
         `Compañía: ${actual.compania}`,
         `Dirección: ${actual.direccion}`,
         `Tipo de inspección: ${actual.modalidad || "sin indicar"}`,
-        `Fotos en total: ${total}`,
+        `Fotos enviadas desde la app: ${total}`,
         "",
-        "Espera a que la carpeta fotos tenga todas las fotos antes de empezar.",
+        "Haz el informe ya, sin esperar a las fotos: el perito las añade por su cuenta.",
       ].join("\n") + "\n";
     }
     const r = await Drive.sincronizar(actual, carpeta(actual), textos, aviso);
